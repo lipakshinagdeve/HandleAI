@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import './variables.scss';
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: $font-primary;
+  font-weight: $font-weight-regular;
+  color: $text-dark;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: $font-weight-semibold;
+  line-height: 1.3;
+  margin-bottom: $spacing-sm;
+}
+
+h1 {
+  font-size: 3rem;
+  font-weight: $font-weight-bold;
+  
+  @media (max-width: $breakpoint-mobile) {
+    font-size: 2.5rem;
+  }
+}
+
+h2 {
+  font-size: 2.5rem;
+  
+  @media (max-width: $breakpoint-mobile) {
+    font-size: 2rem;
+  }
+}
+
+h3 {
+  font-size: 1.5rem;
+}
+
+p {
+  margin-bottom: $spacing-sm;
+  color: $text-light;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  transition: all 0.3s ease;
+}
+
+button {
+  border: none;
+  outline: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.3s ease;
+}
+
+input, textarea {
+  font-family: inherit;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 $spacing-md;
+  
+  @media (max-width: $breakpoint-mobile) {
+    padding: 0 $spacing-sm;
+  }
+}
+
+.btn {
+  padding: $spacing-sm $spacing-lg;
+  border-radius: $border-radius-md;
+  font-weight: $font-weight-medium;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  
+  &.btn-primary {
+    background: $gradient-primary;
+    color: $white;
+    box-shadow: $shadow-medium;
+    
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-heavy;
+    }
+  }
+  
+  &.btn-secondary {
+    background: $white;
+    color: $text-dark;
+    border: 2px solid $primary-pink;
+    
+    &:hover {
+      background: $primary-pink;
+      color: $white;
+    }
+  }
+}
+
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

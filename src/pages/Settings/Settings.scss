@@ -1,0 +1,103 @@
+@import '../../styles/variables.scss';
+
+.settings {
+  min-height: 100vh;
+  background: $gradient-primary;
+  padding: 100px 0 $spacing-xxl;
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-xxl;
+    animation: fadeIn 0.8s ease;
+
+    h1 {
+      font-size: 3rem;
+      font-weight: $font-weight-bold;
+      color: $text-dark;
+      margin-bottom: $spacing-sm;
+      
+      @media (max-width: $breakpoint-mobile) {
+        font-size: 2.5rem;
+      }
+    }
+
+    p {
+      color: $text-light;
+      font-size: 1.2rem;
+      margin: 0;
+    }
+  }
+
+  &__content {
+    max-width: 800px;
+    margin: 0 auto;
+    animation: fadeInUp 1s ease;
+  }
+
+  &__section {
+    background: $gradient-card;
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: $border-radius-lg;
+    padding: $spacing-xl;
+    margin-bottom: $spacing-xl;
+    box-shadow: $shadow-medium;
+
+    h2 {
+      color: $text-dark;
+      margin-bottom: $spacing-lg;
+      font-size: 1.75rem;
+      font-weight: $font-weight-semibold;
+    }
+
+    .feedback__button {
+      width: 100%;
+      padding: $spacing-md $spacing-lg;
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: $white;
+      border: none;
+      border-radius: $border-radius-md;
+      font-size: 1.1rem;
+      font-weight: $font-weight-semibold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+
+      &:hover {
+        transform: translateY(-2px);
+        box-shadow: $shadow-medium;
+      }
+    }
+  }
+
+  .profile__form {
+    .form__row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: $spacing-md;
+      
+      @media (max-width: $breakpoint-mobile) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .form__group {
+      margin-bottom: $spacing-lg;
+
+      label {
+        display: block;
+        font-weight: $font-weight-semibold;
+        color: $text-dark;
+        margin-bottom: $spacing-sm;
+        font-size: 0.95rem;
+      }
+
+      input,
+      textarea {
+        width: 100%;
+        padding: $spacing-md;
+        border: 2px solid rgba(255, 105, 180, 0.2);
+        border-radius: $border-radius-md;
+      }
+    } // <-- Added missing closing brace for .form__group
+  } // <-- Added missing closing brace for .profile__form
+} // <-- Added missing

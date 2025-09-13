@@ -1,0 +1,87 @@
+@import '../../styles/variables.scss';
+
+.job-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background: $gradient-card;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: $border-radius-xl;
+  padding: $spacing-xl;
+  box-shadow: $shadow-heavy;
+  animation: fadeInUp 0.8s ease;
+  
+  @media (max-width: $breakpoint-mobile) {
+    padding: $spacing-lg;
+    margin: 0 $spacing-sm;
+  }
+
+  &__header {
+    text-align: center;
+    margin-bottom: $spacing-lg;
+
+    h3 {
+      font-size: 1.75rem;
+      font-weight: $font-weight-bold;
+      color: $text-dark;
+      margin-bottom: $spacing-sm;
+      
+      @media (max-width: $breakpoint-mobile) {
+        font-size: 1.5rem;
+      }
+    }
+
+    p {
+      color: $text-light;
+      font-size: 1rem;
+      margin: 0;
+    }
+  }
+
+  &__content {
+    .input-group {
+      margin-bottom: $spacing-lg;
+
+      label {
+        display: block;
+        font-weight: $font-weight-medium;
+        color: $text-dark;
+        margin-bottom: $spacing-sm;
+        font-size: 0.95rem;
+      }
+
+      .job-portal-input {
+        width: 100%;
+        padding: $spacing-md;
+        border: 2px solid rgba(255, 105, 180, 0.2);
+        border-radius: $border-radius-md;
+        font-size: 1rem;
+        background: rgba(255, 255, 255, 0.8);
+        transition: all 0.3s ease;
+
+        &:focus {
+          border-color: $primary-pink;
+          background: white;
+          transform: translateY(-2px);
+          box-shadow: $shadow-medium;
+        }
+
+        &::placeholder {
+          color: $text-light;
+        }
+      }
+    }
+
+    .get-started-btn {
+      width: 100%;
+      padding: $spacing-md $spacing-lg;
+      font-size: 1.1rem;
+      font-weight: $font-weight-semibold;
+      border-radius: $border-radius-md;
+      
+      &:hover {
+        transform: translateY(-3px);
+      }
+    }
+  }
+}

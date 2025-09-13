@@ -1,0 +1,79 @@
+@import '../../styles/variables.scss';
+
+.footer {
+  background: $gradient-secondary;
+  margin-top: auto;
+  padding: $spacing-xxl 0 $spacing-md;
+
+  &__content {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: $spacing-xl;
+    margin-bottom: $spacing-lg;
+    
+    @media (max-width: $breakpoint-mobile) {
+      grid-template-columns: 1fr;
+      gap: $spacing-lg;
+    }
+  }
+
+  &__logo {
+    .logo-text {
+      font-size: 1.5rem;
+      font-weight: $font-weight-bold;
+      color: black;
+      background-clip: text;
+      display: inline-block;
+      margin-bottom: $spacing-sm;
+    }
+  }
+
+  &__tagline {
+    color: $text-light;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  &__links {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: $spacing-lg;
+    
+    @media (max-width: $breakpoint-mobile) {
+      grid-template-columns: 1fr;
+      gap: $spacing-md;
+    }
+  }
+
+  &__section {
+    h4 {
+      font-weight: $font-weight-semibold;
+      margin-bottom: $spacing-sm;
+      color: $text-dark;
+    }
+
+    a {
+      display: block;
+      color: $text-light;
+      font-size: 0.9rem;
+      margin-bottom: $spacing-xs;
+      transition: color 0.3s ease;
+
+      &:hover {
+        color: $primary-pink;
+      }
+    }
+  }
+
+  &__bottom {
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    padding-top: $spacing-md;
+    text-align: center;
+
+    p {
+      color: $text-light;
+      font-size: 0.85rem;
+      margin: 0;
+    }
+  }
+}
