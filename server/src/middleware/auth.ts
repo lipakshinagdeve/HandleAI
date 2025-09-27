@@ -17,8 +17,11 @@ export const protect = async (
     token = req.cookies['token'];
   }
 
+  console.log('Auth middleware - Token found:', !!token); // Debug log
+
   // Make sure token exists
   if (!token) {
+    console.log('No token provided');
     res.status(HTTP_STATUS.UNAUTHORIZED).json({
       success: false,
       message: ERROR_MESSAGES.UNAUTHORIZED
@@ -30,7 +33,10 @@ export const protect = async (
     // Verify token with Supabase
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
+    console.log('Token verification - User:', !!user, 'Error:', !!error); // Debug log
+
     if (error || !user) {
+      console.log('Token verification failed:', error?.message);
       res.status(HTTP_STATUS.UNAUTHORIZED).json({
         success: false,
         message: ERROR_MESSAGES.TOKEN_INVALID
@@ -46,6 +52,7 @@ export const protect = async (
       .single();
 
     if (profileError || !profile) {
+      console.log('Profile not found:', profileError?.message);
       res.status(HTTP_STATUS.NOT_FOUND).json({
         success: false,
         message: ERROR_MESSAGES.USER_NOT_FOUND
