@@ -1,16 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useUser } from '../../context/UserContext';
+import { userAPI, authAPI } from '../../utils/api';
 import './Settings.scss';
 
 const Settings = () => {
+  const navigate = useNavigate();
+  const { user, setUser } = useUser();
   const [profile, setProfile] = useState({
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    phone: '+1 (555) 123-4567',
-    skills: 'React, Node.js, Python, JavaScript, MongoDB'
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    skills: ''
   });
-
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Load user data when component mounts
+  useEffect(() => {
+    if (user) {
+      setProfile({
+        firstName: user.firstName || user.first_name || '',
+        lastName: user.lastName || user.last_name || '',
+        email: user.email || '',
+        phone: user.phone || '',
+        skills: user.skills || ''
+      });
+    }
+  }, [user]);
 
   const handleChange = (e) => {
     setProfile({
@@ -19,27 +39,94 @@ const Settings = () => {
     });
   };
 
-  const handleUpdateProfile = (e) => {
+  const handleUpdateProfile = async (e) => {
     e.preventDefault();
-    console.log('Profile updated:', profile);
-    alert('Profile updated successfully!');
+    setLoading(true);
+
+    try {
+      const response = await userAPI.updateProfile(profile);
+      if (response.success) {
+        setUser(response.user);
+        localStorage.setItem('user', JSON.stringify(response.user));
+        alert('Profile updated successfully!');
+      } else {
+        alert(response.message || 'Update failed');
+      }
+    } catch (error) {
+      alert('Error updating profile: ' + error.message);
+    }
+
+    setLoading(false);
   };
 
-  const handleLogout = () => {
-    console.log('User logged out');
-    alert('Logged out successfully!');
+  const handleLogout = async () => {
+    try {
+      await authAPI.logout();
+      localStorage.removeItem('user');
+      setUser(null);
+      navigate('/');
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if API call fails, clear local state
+      localStorage.removeItem('user');
+      setUser(null);
+      navigate('/');
+    }
   };
 
-  const handleDeleteAccount = () => {
-    console.log('Account deleted');
-    alert('Account deleted successfully!');
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmation !== 'DELETE') {
+      alert('Please type "DELETE" to confirm account deletion');
+      return;
+    }
+
+    setDeleteLoading(true);
+
+    try {
+      const response = await userAPI.deleteAccount('DELETE');
+      
+      if (response.success) {
+        // Clear user data
+        localStorage.removeItem('user');
+        setUser(null);
+        
+        // Show success message
+        alert('Account deleted successfully. You will be redirected to the home page.');
+        
+        // Redirect to home page
+        navigate('/');
+      } else {
+        alert(response.message || 'Failed to delete account');
+      }
+    } catch (error) {
+      alert('Error deleting account: ' + error.message);
+    }
+
+    setDeleteLoading(false);
     setShowDeleteModal(false);
   };
 
   const handleFeedback = () => {
-    console.log('Opening feedback form');
     alert('Feedback form would open here');
   };
+
+  if (!user) {
+    return (
+      <div className="settings">
+        <div className="container">
+          <div className="settings__header">
+            <h1>Please login to access settings</h1>
+            <button 
+              onClick={() => navigate('/login')}
+              className="btn btn-primary"
+            >
+              Go to Login
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="settings">
@@ -52,7 +139,7 @@ const Settings = () => {
         <div className="settings__content">
           <div className="settings__section">
             <button onClick={handleFeedback} className="feedback__button">
-              💬 Give Feedback
+              Give Feedback
             </button>
           </div>
 
@@ -94,6 +181,7 @@ const Settings = () => {
                   value={profile.email}
                   onChange={handleChange}
                   required
+                  disabled
                 />
               </div>
 
@@ -122,8 +210,12 @@ const Settings = () => {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary update-btn">
-                Update Profile
+              <button 
+                type="submit" 
+                className="btn btn-primary update-btn" 
+                disabled={loading}
+              >
+                {loading ? 'Updating...' : 'Update Profile'}
               </button>
             </form>
           </div>
@@ -132,14 +224,14 @@ const Settings = () => {
             <h2>Account Actions</h2>
             <div className="action__buttons">
               <button onClick={handleLogout} className="btn btn-secondary logout-btn">
-                🚪 Logout
+                Logout
               </button>
               
               <button 
                 onClick={() => setShowDeleteModal(true)} 
                 className="btn btn-danger delete-btn"
               >
-                🗑️ Delete Account
+                Delete Account
               </button>
             </div>
           </div>
@@ -148,20 +240,41 @@ const Settings = () => {
         {showDeleteModal && (
           <div className="modal__overlay">
             <div className="modal__content">
-              <h3>Delete Account</h3>
-              <p>Are you sure you want to delete your account? This action cannot be undone.</p>
+              <h3>Delete Account Permanently</h3>
+              <p>
+                <strong>Warning:</strong> This action cannot be undone. All your data, 
+                including job applications and profile information, will be permanently deleted.
+              </p>
+              <div className="form__group">
+                <label htmlFor="deleteConfirmation">
+                  Type "DELETE" to confirm:
+                </label>
+                <input
+                  type="text"
+                  id="deleteConfirmation"
+                  value={deleteConfirmation}
+                  onChange={(e) => setDeleteConfirmation(e.target.value)}
+                  placeholder="Type DELETE here"
+                  className="delete-confirmation-input"
+                />
+              </div>
               <div className="modal__buttons">
                 <button 
-                  onClick={() => setShowDeleteModal(false)}
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setDeleteConfirmation('');
+                  }}
                   className="btn btn-secondary"
+                  disabled={deleteLoading}
                 >
                   Cancel
                 </button>
                 <button 
                   onClick={handleDeleteAccount}
                   className="btn btn-danger"
+                  disabled={deleteLoading || deleteConfirmation !== 'DELETE'}
                 >
-                  Delete Account
+                  {deleteLoading ? 'Deleting Account...' : 'Delete Account Permanently'}
                 </button>
               </div>
             </div>
