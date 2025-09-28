@@ -1,15 +1,28 @@
+// Production backend URL
+const PRODUCTION_API_URL = 'https://handleai-q84tva5nd-lipakshinagdeves-projects.vercel.app/api';
+const LOCAL_API_URL = 'http://localhost:5001/api';
+
 // Dynamically determine API base URL based on environment
 const getAPIBase = () => {
-  // Check if we're running on handlejobs.com domain
-  if (typeof window !== 'undefined' && window.location.hostname === 'handlejobs.com') {
-    return 'https://api.handlejobs.com/api';
+  // Check if we're running on production domains
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname;
+    console.log('Current hostname:', hostname); // Debug log
+    if (hostname === 'handlejobs.com' || hostname === 'www.handlejobs.com' || hostname.includes('vercel.app')) {
+      console.log('Using production API:', PRODUCTION_API_URL); // Debug log
+      return PRODUCTION_API_URL;
+    }
   }
+  
   // Check if we're in production build
   if (process.env.NODE_ENV === 'production') {
-    return 'https://api.handlejobs.com/api';
+    console.log('Production build detected, using:', PRODUCTION_API_URL); // Debug log
+    return PRODUCTION_API_URL;
   }
+  
   // Default to localhost for development
-  return 'http://localhost:5001/api';
+  console.log('Using local API:', LOCAL_API_URL); // Debug log
+  return LOCAL_API_URL;
 };
 
 const API_BASE = getAPIBase();
