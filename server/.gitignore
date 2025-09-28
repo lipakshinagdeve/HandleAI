@@ -77,7 +77,7 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# dist
 
 # Gatsby files
 .cache/
@@ -102,7 +102,7 @@ temp/
 .pnp.*
 
 # TypeScript build output
-dist/
+# dist/
 build/
 
 # Database
