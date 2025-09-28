@@ -189,7 +189,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         const { data: profile, error: profileError } = await supabaseAdmin
             .from('user_profiles')
             .select('*')
-            .eq('id', data.user!.id)
+            .eq('id', data.user.id)
             .single();
 
         if (profileError || !profile) {
@@ -209,7 +209,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         }
 
         // Set session cookie
-        res.cookie('token', data.session!.access_token, {
+        res.cookie('token', data.session.access_token, {
             httpOnly: true,
             secure: config.isProduction,
             sameSite: 'strict',
@@ -220,7 +220,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             success: true,
             message: SUCCESS_MESSAGES.USER_LOGGED_IN,
             user: profile,
-            session: data.session!
+            session: data.session
         });
 
     } catch (error: any) {
