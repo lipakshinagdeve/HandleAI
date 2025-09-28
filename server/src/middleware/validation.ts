@@ -1,6 +1,6 @@
 import Joi from 'joi';
 import { Request, Response, NextFunction } from 'express';
-import { HTTP_STATUS } from '@utils/constants';
+import { HTTP_STATUS } from '../utils/constants';
 
 export const validateRegister = (req: Request, res: Response, next: NextFunction): void => {
   const schema = Joi.object({

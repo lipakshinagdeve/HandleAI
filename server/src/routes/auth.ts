@@ -7,9 +7,9 @@ import {
   updatePassword, 
   verifyToken,
   confirmEmail
-} from '@controllers/authController';
-import { protect } from '@middleware/auth';
-import { validateRegister, validateLogin } from '@middleware/validation';
+} from '../controllers/authController';
+import { protect } from '../middleware/auth';
+import { validateRegister, validateLogin } from '../middleware/validation';
 
 const router = express.Router();
 
