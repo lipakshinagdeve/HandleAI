@@ -30,14 +30,36 @@ app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: [
-    config.clientUrl, 
-    'https://handlejobs.com',
-    'https://www.handlejobs.com',
-    'http://localhost:3000'
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      config.clientUrl, 
+      'https://handlejobs.com',
+      'https://www.handlejobs.com',
+      'http://localhost:3000',
+      'http://localhost:3001'
+    ];
+    
+    console.log('CORS Origin check:', origin);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    
+    // For development, be more permissive
+    if (process.env.NODE_ENV === 'development') {
+      return callback(null, true);
+    }
+    
+    const msg = `The CORS policy for this site does not allow access from the specified Origin: ${origin}`;
+    return callback(new Error(msg), false);
+  },
   credentials: true, // This correctly allows cookies to be sent/received cross-origin
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 // Body parsing middleware
