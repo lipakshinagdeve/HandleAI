@@ -3,10 +3,10 @@
 import { Response } from 'express';
 // 🎯 FIX: Import the Supabase Client
 import { supabase } from '../config/supabase'; 
-import { AIService } from '@services/aiService';
+import { AIService } from '../services/aiService';
 // 🎯 NOTE: Import IJob for strong typing the job object
-import { AuthRequest, IJob } from '@utils/types'; 
-import { HTTP_STATUS, ERROR_MESSAGES } from '@utils/constants';
+import { AuthRequest, IJob } from '../utils/types'; 
+import { HTTP_STATUS, ERROR_MESSAGES } from '../utils/constants';
 
 const aiService = new AIService();
 

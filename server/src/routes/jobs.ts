@@ -5,9 +5,9 @@ import {
   getJobDetails,
   applyToJob,
   startJobAutomation
-} from '@controllers/jobController';
-import { protect } from '@middleware/auth';
-import { validateJobPortal } from '@middleware/validation';
+} from '../controllers/jobController';
+import { protect } from '../middleware/auth';
+import { validateJobPortal } from '../middleware/validation';
 
 const router = express.Router();
 

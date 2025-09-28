@@ -1,9 +1,9 @@
 import puppeteer, { Browser, Page } from 'puppeteer';
 import * as cheerio from 'cheerio';
 import axios from 'axios';
-import { ScrapedJobData } from '@utils/types';
-import { SOURCE_PORTALS, JOB_TYPES, EXPERIENCE_LEVELS, SCRAPING_CONFIG } from '@utils/constants';
-import { sleep } from '@utils/helpers';
+import { ScrapedJobData } from '../utils/types';
+import { SOURCE_PORTALS, JOB_TYPES, EXPERIENCE_LEVELS, SCRAPING_CONFIG } from '../utils/constants';
+import { sleep } from '../utils/helpers';
 
 export class JobScrapingService {
   private browser: Browser | null = null;

@@ -1,6 +1,6 @@
 import jwt, { Secret, SignOptions } from 'jsonwebtoken';
 import { config } from '../config/environment';
-import { IUser } from '@utils/types';
+import { IUser } from './types';
 import { Response } from 'express';
 
 // Generate JWT token

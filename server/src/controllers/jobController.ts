@@ -1,10 +1,10 @@
 import { Response } from 'express';
 import { supabaseAdmin } from '../config/supabase';
-import { JobScrapingService } from '@services/jobScrapingService';
-import { AIService } from '@services/aiService';
-import { AuthRequest, IJob, IApplication } from '@utils/types';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@utils/constants';
-import { calculatePagination, sleep } from '@utils/helpers';
+import { JobScrapingService } from '../services/jobScrapingService';
+import { AIService } from '../services/aiService';
+import { AuthRequest, IJob, IApplication } from '../utils/types';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../utils/constants';
+import { calculatePagination, sleep } from '../utils/helpers';
 import { v4 as uuidv4 } from 'uuid';
 
 const jobScrapingService = new JobScrapingService();

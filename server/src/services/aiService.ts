@@ -1,5 +1,5 @@
 import openai from '../config/openai';
-import { IJob, IUser, OptimizationSuggestion } from '@utils/types';
+import { IJob, IUser, OptimizationSuggestion } from '../utils/types';
 
 export class AIService {
   async generateCoverLetter(job: IJob, user: IUser): Promise<string> {

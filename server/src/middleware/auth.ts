@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../config/supabase';
 import { AuthRequest } from '../utils/types';
-import { HTTP_STATUS, ERROR_MESSAGES } from '@utils/constants';
+import { HTTP_STATUS, ERROR_MESSAGES } from '../utils/constants';
 
 export const protect = async (
   req: AuthRequest,

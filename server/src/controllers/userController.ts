@@ -1,8 +1,8 @@
 import { Response } from 'express';
 import { supabaseAdmin } from '../config/supabase';
-import { AuthRequest } from '@utils/types';
-import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '@utils/constants';
-import { calculatePagination } from '@utils/helpers';
+import { AuthRequest } from '../utils/types';
+import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../utils/constants';
+import { calculatePagination } from '../utils/helpers';
 
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {

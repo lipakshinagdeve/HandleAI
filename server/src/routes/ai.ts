@@ -5,8 +5,8 @@ import {
   answerMultipleQuestions,
   optimizeApplication,
   getAISuggestions
-} from '@controllers/aiController';
-import { protect } from '@middleware/auth';
+} from '../controllers/aiController';
+import { protect } from '../middleware/auth';
 
 const router = express.Router();
 

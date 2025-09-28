@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { config } from '../config/environment';
-import { HTTP_STATUS } from '@utils/constants';
+import { HTTP_STATUS } from '../utils/constants';
 
 interface ErrorWithStatus extends Error {
   statusCode?: number;
