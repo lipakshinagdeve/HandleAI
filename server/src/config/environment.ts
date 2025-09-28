@@ -20,7 +20,10 @@ export const config = {
   // OpenAI
   openaiApiKey: process.env['OPENAI_API_KEY'] || '',
   
-  // Email
+  // Resend
+  resendApiKey: process.env['RESEND_API_KEY'] || '',
+  
+  // Email (Legacy)
   emailHost: process.env['EMAIL_HOST'] || 'smtp.gmail.com',
   emailPort: parseInt(process.env['EMAIL_PORT'] || '587'),
   emailUser: process.env['EMAIL_USER'] || '',

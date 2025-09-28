@@ -1,4 +1,18 @@
-const API_BASE = 'http://localhost:5000/api';
+// Dynamically determine API base URL based on environment
+const getAPIBase = () => {
+  // Check if we're running on handlejobs.com domain
+  if (typeof window !== 'undefined' && window.location.hostname === 'handlejobs.com') {
+    return 'https://api.handlejobs.com/api';
+  }
+  // Check if we're in production build
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://api.handlejobs.com/api';
+  }
+  // Default to localhost for development
+  return 'http://localhost:5001/api';
+};
+
+const API_BASE = getAPIBase();
 
 export const authAPI = {
   register: async (userData) => {
@@ -36,13 +50,20 @@ export const authAPI = {
     return response.json();
   },
 
-  verifyToken: async () => {
-    const response = await fetch(`${API_BASE}/auth/verify`, {
-      method: 'POST',
-      credentials: 'include'
-    });
-    return response.json();
-  }
+  verifyToken: async () => {
+    const response = await fetch(`${API_BASE}/auth/verify`, {
+      method: 'POST',
+      credentials: 'include'
+    });
+    return response.json();
+  },
+
+  confirmEmail: async (token) => {
+    const response = await fetch(`${API_BASE}/auth/confirm-email?token=${token}`, {
+      method: 'GET'
+    });
+    return response.json();
+  }
 };
 
 export const userAPI = {

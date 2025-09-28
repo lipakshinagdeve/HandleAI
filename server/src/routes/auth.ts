@@ -5,7 +5,8 @@ import {
   logout, 
   getMe, 
   updatePassword, 
-  verifyToken 
+  verifyToken,
+  confirmEmail
 } from '@controllers/authController';
 import { protect } from '@middleware/auth';
 import { validateRegister, validateLogin } from '@middleware/validation';
@@ -41,6 +42,12 @@ router.put('/updatepassword', protect, updatePassword);
 // @route   POST /api/auth/verify
 // @access  Private
 router.post('/verify', protect, verifyToken);
+
+// @desc    Confirm email address
+// @route   GET /api/auth/confirm-email
+// @access  Public
+router.get('/confirm-email', confirmEmail);
+
 router.post('/test', (req, res) => {
   console.log('Test endpoint hit:', req.body);
   res.json({ success: true, message: 'Test endpoint working', body: req.body });

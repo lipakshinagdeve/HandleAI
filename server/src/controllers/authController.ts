@@ -3,6 +3,8 @@ import { supabase, supabaseAdmin } from '../config/supabase';
 import { AuthRequest } from '../utils/types'; 
 import { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../utils/constants';
 import { config } from '../config/environment';
+import { sendConfirmationEmail, sendWelcomeEmail } from '../services/emailService';
+import { generateConfirmationToken, storeConfirmationToken, verifyConfirmationToken } from '../utils/emailToken';
 
 export const register = async (req: Request, res: Response): Promise<void> => {
     try {
@@ -27,7 +29,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
         const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
             email,
             password,
-            // email_confirm: true, // Skip email confirmation
+            email_confirm: false, // Require email confirmation
             user_metadata: {
                 first_name: firstName,
                 last_name: lastName
@@ -91,17 +93,44 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
         console.log('Profile created successfully!');
 
+        // Generate confirmation token
+        const confirmationToken = generateConfirmationToken();
+        
+        // Store token in database
+        const tokenStored = await storeConfirmationToken(authData.user.id, confirmationToken);
+        
+        if (!tokenStored) {
+            console.error('Failed to store confirmation token');
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: 'Registration completed but failed to send confirmation email. Please contact support.'
+            });
+            return;
+        }
+
+        // Send confirmation email
+        const emailSent = await sendConfirmationEmail(email, firstName, confirmationToken);
+        
+        if (!emailSent) {
+            console.error('Failed to send confirmation email');
+            
+            // Don't auto-confirm, let user know they need to confirm email
+            res.status(HTTP_STATUS.CREATED).json({
+                success: true,
+                message: 'Registration successful! Please check your email and click the confirmation link to activate your account. (Note: Email sending is currently disabled for development)',
+                requiresEmailConfirmation: true,
+                email: email
+            });
+            return;
+        }
+
+        console.log('Confirmation email sent successfully!');
+
         res.status(HTTP_STATUS.CREATED).json({
             success: true,
-            message: SUCCESS_MESSAGES.USER_REGISTERED,
-            user: {
-                id: authData.user.id,
-                email: authData.user.email,
-                firstName,
-                lastName,
-                phone,
-                skills
-            }
+            message: 'Registration successful! Please check your email and click the confirmation link to activate your account.',
+            requiresEmailConfirmation: true,
+            email: email
         });
 
     } catch (error: any) {
@@ -116,17 +145,34 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 export const login = async (req: Request, res: Response): Promise<void> => {
     try {
         const { email, password } = req.body;
+        
+        console.log('=== LOGIN ATTEMPT ===');
+        console.log('Email:', email);
+        console.log('Password length:', password?.length);
 
-        // Sign in with Supabase
-        const { data, error } = await supabase.auth.signInWithPassword({
+        // Try to sign in with regular Supabase client first
+        let { data, error } = await supabase.auth.signInWithPassword({
             email,
             password,
         });
+        
+        console.log('Initial login attempt - Success:', !!data.user, 'Error:', error?.message);
 
-        if (error) {
+        // If login fails due to email not confirmed, show proper message
+        if (error && error.message === 'Email not confirmed') {
+            console.log('Email not confirmed for user:', email);
+            
             res.status(HTTP_STATUS.UNAUTHORIZED).json({
                 success: false,
-                message: error.message
+                message: 'Your email address has not been confirmed yet. Please check your email and click the confirmation link to activate your account.',
+                emailNotConfirmed: true,
+                email: email
+            });
+            return;
+        } else if (error) {
+            res.status(HTTP_STATUS.UNAUTHORIZED).json({
+                success: false,
+                message: 'Invalid email or password'
             });
             return;
         }
@@ -143,7 +189,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         const { data: profile, error: profileError } = await supabaseAdmin
             .from('user_profiles')
             .select('*')
-            .eq('id', data.user.id)
+            .eq('id', data.user!.id)
             .single();
 
         if (profileError || !profile) {
@@ -163,7 +209,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
         }
 
         // Set session cookie
-        res.cookie('token', data.session.access_token, {
+        res.cookie('token', data.session!.access_token, {
             httpOnly: true,
             secure: config.isProduction,
             sameSite: 'strict',
@@ -174,7 +220,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
             success: true,
             message: SUCCESS_MESSAGES.USER_LOGGED_IN,
             user: profile,
-            session: data.session
+            session: data.session!
         });
 
     } catch (error: any) {
@@ -347,6 +393,79 @@ export const deleteAccount = async (req: AuthRequest, res: Response): Promise<vo
         res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
             success: false,
             message: `Server error during account deletion: ${error.message}`
+        });
+    }
+};
+
+export const confirmEmail = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { token } = req.query;
+
+        if (!token || typeof token !== 'string') {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: 'Invalid confirmation token'
+            });
+            return;
+        }
+
+        console.log('=== EMAIL CONFIRMATION START ===');
+        console.log('Token:', token.substring(0, 10) + '...');
+
+        // Verify the token
+        const userId = await verifyConfirmationToken(token);
+
+        if (!userId) {
+            res.status(HTTP_STATUS.BAD_REQUEST).json({
+                success: false,
+                message: 'Invalid or expired confirmation token'
+            });
+            return;
+        }
+
+        console.log('Token verified for user:', userId);
+
+        // Confirm the user's email in Supabase Auth
+        const { error: confirmError } = await supabaseAdmin.auth.admin.updateUserById(
+            userId,
+            { email_confirm: true }
+        );
+
+        if (confirmError) {
+            console.error('Error confirming email in Supabase:', confirmError);
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+                success: false,
+                message: 'Failed to confirm email. Please try again.'
+            });
+            return;
+        }
+
+        // Get user profile for welcome email
+        const { data: profile, error: profileError } = await supabaseAdmin
+            .from('user_profiles')
+            .select('email, first_name')
+            .eq('id', userId)
+            .single();
+
+        if (profile && !profileError) {
+            // Send welcome email
+            await sendWelcomeEmail(profile.email, profile.first_name);
+        }
+
+        console.log('Email confirmed successfully!');
+
+        res.status(HTTP_STATUS.OK).json({
+            success: true,
+            message: 'Email confirmed successfully! You can now log in to your account.',
+            confirmed: true,
+            redirectUrl: `${config.clientUrl}/login?confirmed=true`
+        });
+
+    } catch (error: any) {
+        console.error('Email confirmation error:', error);
+        res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).json({
+            success: false,
+            message: `Server error: ${error.message}`
         });
     }
 };

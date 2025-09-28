@@ -79,6 +79,24 @@
           display: none;
         }
       }
+      
+      &.logout-btn {
+        background: none;
+        border: none;
+        font-size: inherit;
+        font-family: inherit;
+        font-weight: $font-weight-medium;
+        color: $text-dark;
+        cursor: pointer;
+        padding: $spacing-xs $spacing-md;
+        border-radius: $border-radius-sm;
+        transition: all 0.3s ease;
+        
+        &:hover {
+          background: rgba(255, 0, 0, 0.1);
+          color: #d32f2f;
+        }
+      }
     }
 
     @media (max-width: $breakpoint-mobile) {

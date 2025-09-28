@@ -30,9 +30,9 @@ app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: config.clientUrl,
-  credentials: true, // This correctly allows cookies to be sent/received cross-origin
-  optionsSuccessStatus: 200
+  origin: [config.clientUrl, 'http://localhost:3000'],
+  credentials: true, // This correctly allows cookies to be sent/received cross-origin
+  optionsSuccessStatus: 200
 }));
 
 // Body parsing middleware
