@@ -1,5 +1,5 @@
 import jwt, { Secret, SignOptions } from 'jsonwebtoken';
-import { config } from '@config/environment';
+import { config } from '../config/environment';
 import { IUser } from '@utils/types';
 import { Response } from 'express';
 

@@ -1,5 +1,5 @@
 import { Response } from 'express';
-import { supabaseAdmin } from '@config/supabase';
+import { supabaseAdmin } from '../config/supabase';
 import { JobScrapingService } from '@services/jobScrapingService';
 import { AIService } from '@services/aiService';
 import { AuthRequest, IJob, IApplication } from '@utils/types';

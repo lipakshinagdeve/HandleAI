@@ -2,7 +2,7 @@
 
 import { Response } from 'express';
 // 🎯 FIX: Import the Supabase Client
-import { supabase } from '@config/supabase'; 
+import { supabase } from '../config/supabase'; 
 import { AIService } from '@services/aiService';
 // 🎯 NOTE: Import IJob for strong typing the job object
 import { AuthRequest, IJob } from '@utils/types'; 

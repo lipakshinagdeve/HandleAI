@@ -1,4 +1,4 @@
-import openai from '@config/openai';
+import openai from '../config/openai';
 import { IJob, IUser, OptimizationSuggestion } from '@utils/types';
 
 export class AIService {
