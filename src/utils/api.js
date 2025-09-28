@@ -1,5 +1,5 @@
 // Production backend URL
-const PRODUCTION_API_URL = 'https://handleai-q84tva5nd-lipakshinagdeves-projects.vercel.app/api';
+const PRODUCTION_API_URL = 'https://handleaibackend-605vxz1t4-lipakshinagdeves-projects.vercel.app/api';
 const LOCAL_API_URL = 'http://localhost:5001/api';
 
 // Dynamically determine API base URL based on environment
