@@ -30,7 +30,12 @@ app.use('/api/', limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: [config.clientUrl, 'http://localhost:3000'],
+  origin: [
+    config.clientUrl, 
+    'https://handlejobs.com',
+    'https://www.handlejobs.com',
+    'http://localhost:3000'
+  ],
   credentials: true, // This correctly allows cookies to be sent/received cross-origin
   optionsSuccessStatus: 200
 }));
