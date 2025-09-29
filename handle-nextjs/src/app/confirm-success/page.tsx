@@ -13,15 +13,15 @@ function ConfirmSuccessContent() {
   useEffect(() => {
     const email = searchParams.get('email');
     const userId = searchParams.get('userId');
+    const firstName = searchParams.get('firstName');
 
     if (email && userId) {
-      // Store user data and redirect to dashboard
+      // Store complete user data with the firstName from the backend
       const userData = {
         id: userId,
         email: email,
         user_metadata: {
-          // We'll get the actual metadata from Supabase if needed
-          first_name: '',
+          first_name: firstName || 'User',
           last_name: '',
           phone_number: '',
           skills: ''
@@ -32,9 +32,12 @@ function ConfirmSuccessContent() {
       
       setMessage('Email confirmed successfully! Redirecting to dashboard...');
       
+      // Clean URL by replacing current history entry (remove query params)
+      window.history.replaceState({}, '', '/confirm-success');
+      
       setTimeout(() => {
         router.push('/dashboard');
-      }, 2000);
+      }, 1500);
     } else {
       setMessage('Invalid confirmation link.');
       setLoading(false);

@@ -50,11 +50,12 @@ export async function GET(request: NextRequest) {
 
     console.log('Email confirmed successfully for user:', tokenData.userId);
     
-    // Log successful confirmation (session generation removed for simplicity)
-    console.log('User confirmed, redirecting to success page');
+    // Get user metadata to pass to the success page
+    const userMetadata = data.user?.user_metadata || {};
+    const firstName = userMetadata.first_name || 'User';
     
-    // Redirect to a confirmation success page that will handle the login
-    return NextResponse.redirect(new URL(`/confirm-success?email=${encodeURIComponent(tokenData.email)}&userId=${tokenData.userId}`, request.url));
+    // Redirect to a confirmation success page with minimal data
+    return NextResponse.redirect(new URL(`/confirm-success?email=${encodeURIComponent(tokenData.email)}&userId=${tokenData.userId}&firstName=${encodeURIComponent(firstName)}`, request.url));
 
   } catch (error) {
     console.error('Email confirmation error:', error);
