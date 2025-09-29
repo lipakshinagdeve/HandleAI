@@ -19,7 +19,11 @@ export function generateEmailToken(email: string, userId: string): string {
 
 export function verifyEmailToken(token: string): { email: string; userId: string } | null {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as jwt.JwtPayload & {
+      email: string;
+      userId: string;
+      type: string;
+    };
     
     if (decoded.type !== 'email_confirmation') {
       return null;

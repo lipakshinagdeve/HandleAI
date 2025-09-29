@@ -50,15 +50,8 @@ export async function GET(request: NextRequest) {
 
     console.log('Email confirmed successfully for user:', tokenData.userId);
     
-    // Create a login session for the user
-    const { data: sessionData, error: sessionError } = await supabase.auth.admin.generateLink({
-      type: 'magiclink',
-      email: tokenData.email
-    });
-    
-    if (sessionError) {
-      console.error('Session generation error:', sessionError);
-    }
+    // Log successful confirmation (session generation removed for simplicity)
+    console.log('User confirmed, redirecting to success page');
     
     // Redirect to a confirmation success page that will handle the login
     return NextResponse.redirect(new URL(`/confirm-success?email=${encodeURIComponent(tokenData.email)}&userId=${tokenData.userId}`, request.url));

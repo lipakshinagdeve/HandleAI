@@ -192,7 +192,7 @@ export default function Dashboard() {
               </div>
               <div className="ml-4">
                 <h3 className="text-sm font-medium text-gray-900">Set job preferences</h3>
-                <p className="text-sm text-gray-500">Tell us what kind of jobs you're looking for.</p>
+                <p className="text-sm text-gray-500">Tell us what kind of jobs you&apos;re looking for.</p>
               </div>
             </div>
             <div className="flex items-start">
