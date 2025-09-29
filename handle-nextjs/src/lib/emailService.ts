@@ -4,7 +4,12 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendConfirmationEmail(email: string, token: string) {
   try {
-    const confirmationUrl = `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/confirm-email?token=${token}`;
+    // Use production URL if available, otherwise fallback to localhost
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+    
+    const confirmationUrl = `${baseUrl}/api/auth/confirm-email?token=${token}`;
     
     console.log('Sending confirmation email to:', email);
     console.log('Confirmation URL:', confirmationUrl);
@@ -82,6 +87,11 @@ export async function sendConfirmationEmail(email: string, token: string) {
 
 export async function sendWelcomeEmail(email: string, firstName: string) {
   try {
+    // Use production URL if available, otherwise fallback to localhost
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : 'http://localhost:3000';
+    
     const { data, error } = await resend.emails.send({
       from: 'Handle <lipakshi@handlejobs.com>',
       to: [email],
@@ -112,8 +122,8 @@ export async function sendWelcomeEmail(email: string, firstName: string) {
             </ul>
             
             <div style="text-align: center; margin: 30px 0;">
-              <a href="${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/dashboard" 
-                 style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+              <a href="${baseUrl}/dashboard" 
+                 style="background: linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%); 
                         color: white; 
                         padding: 15px 30px; 
                         text-decoration: none; 
