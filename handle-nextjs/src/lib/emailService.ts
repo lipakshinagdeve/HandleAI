@@ -4,9 +4,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function sendConfirmationEmail(email: string, token: string) {
   try {
-    // Use production URL if available, otherwise fallback to localhost
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
+    // Use custom domain in production, localhost for development
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://handlejobs.com' 
       : 'http://localhost:3000';
     
     const confirmationUrl = `${baseUrl}/api/auth/confirm-email?token=${token}`;
@@ -87,9 +87,9 @@ export async function sendConfirmationEmail(email: string, token: string) {
 
 export async function sendWelcomeEmail(email: string, firstName: string) {
   try {
-    // Use production URL if available, otherwise fallback to localhost
-    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
+    // Use custom domain in production, localhost for development
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://handlejobs.com' 
       : 'http://localhost:3000';
     
     const { data, error } = await resend.emails.send({
