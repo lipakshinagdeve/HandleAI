@@ -193,7 +193,7 @@ export default function Settings() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto pt-20 pb-12 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-5xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
           <p className="mt-2 text-gray-600">
