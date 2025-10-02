@@ -6,10 +6,26 @@ export class JobApplicationAutomator {
   private page: Page | null = null;
 
   async initialize() {
-    this.browser = await chromium.launch({
-      headless: false, // Keep visible so user can see what's happening
-      slowMo: 1000, // Slow down actions for better visibility
-    });
+    try {
+      // Try to launch in non-headless mode first
+      this.browser = await chromium.launch({
+        headless: false, // Keep visible so user can see what's happening
+        slowMo: 1000, // Slow down actions for better visibility
+      });
+    } catch (error) {
+      console.warn('Failed to launch browser in GUI mode, trying headless mode:', error);
+      try {
+        // Fallback to headless mode
+        this.browser = await chromium.launch({
+          headless: true,
+          slowMo: 500,
+        });
+        console.log('✅ Browser launched in headless mode');
+      } catch (headlessError) {
+        console.error('Failed to launch browser in both GUI and headless modes:', headlessError);
+        throw new Error('Could not launch browser. Please ensure Playwright is properly installed.');
+      }
+    }
     
     const context = await this.browser.newContext({
       viewport: { width: 1280, height: 720 },

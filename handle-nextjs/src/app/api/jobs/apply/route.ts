@@ -19,7 +19,16 @@ export async function POST(request: NextRequest) {
 
     // Initialize Playwright
     const automator = new JobApplicationAutomator();
-    await automator.initialize();
+    try {
+      await automator.initialize();
+    } catch (initError) {
+      console.error('❌ Failed to initialize Playwright:', initError);
+      return NextResponse.json({
+        success: false,
+        message: 'Failed to initialize browser automation. Please ensure Playwright is properly installed.',
+        error: initError instanceof Error ? initError.message : 'Unknown initialization error'
+      }, { status: 500 });
+    }
 
     try {
       // Navigate to job application
