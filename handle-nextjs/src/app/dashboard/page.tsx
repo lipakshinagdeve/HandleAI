@@ -131,77 +131,14 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Application Metrics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full" style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}>
-                  <span className="text-white font-semibold">📝</span>
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Applications Submitted</dt>
-                  <dd className="text-lg font-medium text-gray-900">0</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-green-100">
-                  <span className="text-green-600 font-semibold">📞</span>
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Interviews</dt>
-                  <dd className="text-lg font-medium text-gray-900">0</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-100">
-                  <span className="text-blue-600 font-semibold">📈</span>
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Response Rate</dt>
-                  <dd className="text-lg font-medium text-gray-900">0%</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white shadow rounded-lg p-6">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-yellow-100">
-                  <span className="text-yellow-600 font-semibold">⏱️</span>
-                </div>
-              </div>
-              <div className="ml-5 w-0 flex-1">
-                <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Time Saved</dt>
-                  <dd className="text-lg font-medium text-gray-900">0h</dd>
-                </dl>
-              </div>
-            </div>
-          </div>
-        </div>
 
         {/* Recent Applications */}
         <div className="bg-white shadow rounded-lg p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold text-gray-900">Recent Applications</h2>
+            <div className="flex items-center space-x-3">
+              <h2 className="text-xl font-semibold text-gray-900">Applications Submitted</h2>
+              <span className="text-lg font-medium text-gray-600">(0)</span>
+            </div>
             <button className="text-sm text-gray-500 hover:text-gray-700">View All</button>
           </div>
           
