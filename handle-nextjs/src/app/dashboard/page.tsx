@@ -18,6 +18,10 @@ export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [jobUrl, setJobUrl] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [message, setMessage] = useState('');
+  const [applicationsCount, setApplicationsCount] = useState(0);
 
   useEffect(() => {
     // Check if user is logged in
@@ -33,6 +37,63 @@ export default function Dashboard() {
   const handleLogout = () => {
     localStorage.removeItem('user');
     router.push('/');
+  };
+
+  const handleJobApplication = async () => {
+    if (!jobUrl.trim()) {
+      setMessage('Please enter a job application URL');
+      return;
+    }
+
+    if (!user) {
+      setMessage('User not found. Please log in again.');
+      return;
+    }
+
+    // Check if user has background info
+    if (!user.user_metadata?.background_info) {
+      setMessage('Please complete your background information in Settings first');
+      return;
+    }
+
+    setIsProcessing(true);
+    setMessage('');
+
+    try {
+      const userBackground = {
+        firstName: user.user_metadata?.first_name || '',
+        lastName: user.user_metadata?.last_name || '',
+        email: user.email,
+        phoneNumber: user.user_metadata?.phone_number || '',
+        backgroundInfo: user.user_metadata?.background_info || ''
+      };
+
+      const response = await fetch('/api/jobs/apply', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobUrl: jobUrl.trim(),
+          userBackground
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setMessage(`✅ Success! Filled application for ${data.data.jobTitle} at ${data.data.companyName}. Check the new browser tab to review and submit.`);
+        setApplicationsCount(prev => prev + 1);
+        setJobUrl(''); // Clear the input
+      } else {
+        setMessage(`❌ Error: ${data.message}`);
+      }
+    } catch (error) {
+      console.error('Job application error:', error);
+      setMessage('❌ Failed to process job application. Please try again.');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (loading) {
@@ -107,8 +168,11 @@ export default function Dashboard() {
               <input
                 type="url"
                 id="jobLink"
+                value={jobUrl}
+                onChange={(e) => setJobUrl(e.target.value)}
                 placeholder="https://company.com/careers/job-application"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
+                disabled={isProcessing}
               />
             </div>
 
@@ -116,15 +180,24 @@ export default function Dashboard() {
             {/* Action Button */}
             <div>
               <button
+                onClick={handleJobApplication}
+                disabled={isProcessing || !jobUrl.trim()}
                 className="w-full text-white px-6 py-3 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
               >
-                🤖 Analyze & Fill Application
+                {isProcessing ? '🔄 Processing...' : '🤖 Analyze & Fill Application'}
               </button>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 Make sure to complete your profile information in <Link href="/settings" className="text-pink-500 hover:underline">Settings</Link> first
               </p>
             </div>
+
+            {/* Status Message */}
+            {message && (
+              <div className={`p-4 rounded-md ${message.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                {message}
+              </div>
+            )}
           </div>
         </div>
 
@@ -134,7 +207,7 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-3">
               <h2 className="text-xl font-semibold text-gray-900">Applications Submitted</h2>
-              <span className="text-lg font-medium text-gray-600">(0)</span>
+              <span className="text-lg font-medium text-gray-600">({applicationsCount})</span>
             </div>
             <button className="text-sm text-gray-500 hover:text-gray-700">View All</button>
           </div>
