@@ -46,7 +46,7 @@ function ConfirmSuccessContent() {
   return (
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
       {/* Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
         <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
@@ -59,7 +59,7 @@ function ConfirmSuccessContent() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-md mx-auto py-12 px-4 sm:px-6 lg:px-8">
+      <main className="max-w-md mx-auto pt-20 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
           <div className="text-center">
             <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4" style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}>
