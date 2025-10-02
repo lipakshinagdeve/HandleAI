@@ -66,6 +66,12 @@ export default function Dashboard() {
                 Welcome, {user.user_metadata?.first_name || user.email}!
               </span>
               <Link
+                href="/dashboard"
+                className="text-gray-600 hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Dashboard
+              </Link>
+              <Link
                 href="/settings"
                 className="text-gray-600 hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium"
               >

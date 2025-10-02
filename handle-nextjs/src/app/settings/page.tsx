@@ -171,15 +171,21 @@ export default function Settings() {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
+              <span className="text-gray-700">
+                Welcome, {user.user_metadata?.first_name || user.email}!
+              </span>
               <Link
                 href="/dashboard"
                 className="text-gray-600 hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Dashboard
               </Link>
-              <span className="text-gray-700">
-                Welcome, {user.user_metadata?.first_name || user.email}!
-              </span>
+              <Link
+                href="/settings"
+                className="text-gray-600 hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Settings
+              </Link>
               <button
                 onClick={handleLogout}
                 className="text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90"
