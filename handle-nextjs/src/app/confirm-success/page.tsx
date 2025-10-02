@@ -23,8 +23,7 @@ function ConfirmSuccessContent() {
         user_metadata: {
           first_name: firstName || 'User',
           last_name: '',
-          phone_number: '',
-          skills: ''
+          phone_number: ''
         }
       };
 

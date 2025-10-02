@@ -10,7 +10,7 @@ const supabase = createClient(
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password, firstName, lastName, phoneNumber, skills } = await request.json();
+    const { email, password, firstName, lastName, phoneNumber } = await request.json();
 
     console.log('Registration attempt:', { email, firstName, lastName });
 
@@ -22,8 +22,7 @@ export async function POST(request: NextRequest) {
       user_metadata: {
         first_name: firstName,
         last_name: lastName,
-        phone_number: phoneNumber,
-        skills
+        phone_number: phoneNumber
       }
     });
 

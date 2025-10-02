@@ -11,7 +11,6 @@ interface User {
     first_name?: string;
     last_name?: string;
     phone_number?: string;
-    skills?: string;
   };
 }
 
@@ -107,12 +106,6 @@ export default function Dashboard() {
               <label className="block text-sm font-medium text-gray-700">Phone</label>
               <p className="mt-1 text-sm text-gray-900">
                 {user.user_metadata?.phone_number || 'Not provided'}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Skills</label>
-              <p className="mt-1 text-sm text-gray-900">
-                {user.user_metadata?.skills || 'Not provided'}
               </p>
             </div>
           </div>

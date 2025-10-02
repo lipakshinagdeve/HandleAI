@@ -11,8 +11,7 @@ export default function Signup() {
     lastName: '',
     email: '',
     password: '',
-    phoneNumber: '',
-    skills: ''
+    phoneNumber: ''
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -178,20 +177,6 @@ export default function Signup() {
               />
             </div>
 
-            <div>
-              <label htmlFor="skills" className="block text-sm font-medium text-gray-700">
-                Skills
-              </label>
-              <textarea
-                name="skills"
-                id="skills"
-                rows={3}
-                value={formData.skills}
-                onChange={handleChange}
-                placeholder="e.g., JavaScript, React, Node.js, Python..."
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm px-3 py-2 border"
-              />
-            </div>
 
             <div>
               <button
