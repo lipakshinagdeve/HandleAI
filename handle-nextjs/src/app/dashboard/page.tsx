@@ -259,7 +259,7 @@ export default function Dashboard() {
             <div className="mt-4 p-4 bg-blue-50 rounded-lg">
               <h4 className="font-medium text-blue-900 mb-2">📝 How to Use:</h4>
               <ol className="text-sm text-blue-800 space-y-1">
-                <li>1. Click "Open Job Application" to open the job form in a new tab</li>
+                <li>1. Click &quot;Open Job Application&quot; to open the job form in a new tab</li>
                 <li>2. Copy each response and paste it into the corresponding field</li>
                 <li>3. Review and customize the responses as needed</li>
                 <li>4. Submit your application!</li>

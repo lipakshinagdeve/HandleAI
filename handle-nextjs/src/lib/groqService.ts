@@ -68,7 +68,7 @@ Return ONLY a JSON object with field names as keys and responses as values:
           content: prompt,
         },
       ],
-      model: 'llama-3.1-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.7,
       max_tokens: 2000,
     });
@@ -116,7 +116,7 @@ Return ONLY a JSON object with:
           content: prompt,
         },
       ],
-      model: 'llama-3.1-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.3,
       max_tokens: 1000,
     });
