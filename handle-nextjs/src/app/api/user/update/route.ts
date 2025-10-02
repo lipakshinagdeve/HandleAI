@@ -8,7 +8,7 @@ const supabase = createClient(
 
 export async function PUT(request: NextRequest) {
   try {
-    const { userId, firstName, lastName, phoneNumber } = await request.json();
+    const { userId, firstName, lastName, phoneNumber, backgroundInfo } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ 
@@ -26,7 +26,8 @@ export async function PUT(request: NextRequest) {
         user_metadata: {
           first_name: firstName,
           last_name: lastName,
-          phone_number: phoneNumber
+          phone_number: phoneNumber,
+          background_info: backgroundInfo
         }
       }
     );

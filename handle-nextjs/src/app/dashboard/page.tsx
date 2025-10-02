@@ -98,7 +98,7 @@ export default function Dashboard() {
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Job Application Assistant</h2>
           <p className="text-gray-600 mb-6">
-            Paste any job application link and provide your information. Our AI will automatically fill out the application with personalized answers.
+            Paste any job application link below. Our AI will automatically fill out the application with personalized answers based on your profile information.
           </p>
           
           <div className="space-y-6">
@@ -115,26 +115,6 @@ export default function Dashboard() {
               />
             </div>
 
-            {/* User Information Textarea */}
-            <div>
-              <label htmlFor="userInfo" className="block text-sm font-medium text-gray-700 mb-2">
-                Your Information & Background
-              </label>
-              <textarea
-                id="userInfo"
-                rows={8}
-                placeholder="Tell us about yourself, your skills, experience, education, achievements, and any other relevant information. The AI will use this to personalize your job applications.
-
-Example:
-- 5 years of software development experience
-- Proficient in React, Node.js, Python
-- Bachelor's in Computer Science from XYZ University
-- Led a team of 3 developers at ABC Company
-- Built scalable web applications serving 100k+ users
-- Passionate about clean code and user experience"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
-              />
-            </div>
 
             {/* Action Button */}
             <div>
@@ -142,8 +122,11 @@ Example:
                 className="w-full text-white px-6 py-3 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
               >
-                🤖 Generate Personalized Application
+                🤖 Analyze & Fill Application
               </button>
+              <p className="text-xs text-gray-500 mt-2 text-center">
+                Make sure to complete your profile information in <Link href="/settings" className="text-pink-500 hover:underline">Settings</Link> first
+              </p>
             </div>
           </div>
         </div>

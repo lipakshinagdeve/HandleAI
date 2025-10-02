@@ -11,6 +11,7 @@ interface User {
     first_name?: string;
     last_name?: string;
     phone_number?: string;
+    background_info?: string;
   };
 }
 
@@ -27,7 +28,8 @@ export default function Settings() {
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
-    phoneNumber: ''
+    phoneNumber: '',
+    backgroundInfo: ''
   });
 
   useEffect(() => {
@@ -39,7 +41,8 @@ export default function Settings() {
       setFormData({
         firstName: parsedUser.user_metadata?.first_name || '',
         lastName: parsedUser.user_metadata?.last_name || '',
-        phoneNumber: parsedUser.user_metadata?.phone_number || ''
+        phoneNumber: parsedUser.user_metadata?.phone_number || '',
+        backgroundInfo: parsedUser.user_metadata?.background_info || ''
       });
     } else {
       router.push('/login');
@@ -52,7 +55,7 @@ export default function Settings() {
     router.push('/');
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
@@ -76,7 +79,8 @@ export default function Settings() {
           userId: user.id,
           firstName: formData.firstName,
           lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber
+          phoneNumber: formData.phoneNumber,
+          backgroundInfo: formData.backgroundInfo
         })
       });
 
@@ -90,7 +94,8 @@ export default function Settings() {
             ...user.user_metadata,
             first_name: formData.firstName,
             last_name: formData.lastName,
-            phone_number: formData.phoneNumber
+            phone_number: formData.phoneNumber,
+            background_info: formData.backgroundInfo
           }
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -263,6 +268,55 @@ export default function Settings() {
                 placeholder="Optional"
               />
             </div>
+          </div>
+
+          <div className="mt-6">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="text-white px-6 py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
+              style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
+            >
+              {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+
+        {/* Background Information */}
+        <div className="bg-white shadow rounded-lg p-6 mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Background Information</h2>
+          <p className="text-gray-600 mb-6">
+            Provide detailed information about yourself. The AI will use this to personalize your job applications.
+          </p>
+          
+          <div>
+            <label htmlFor="backgroundInfo" className="block text-sm font-medium text-gray-700 mb-2">
+              Your Information & Background
+            </label>
+            <textarea
+              id="backgroundInfo"
+              name="backgroundInfo"
+              rows={10}
+              value={formData.backgroundInfo}
+              onChange={handleChange}
+              placeholder="Tell us about yourself, your skills, experience, education, achievements, and any other relevant information. The AI will use this to personalize your job applications.
+
+Example:
+- 5 years of software development experience
+- Proficient in React, Node.js, Python, TypeScript
+- Bachelor's in Computer Science from XYZ University
+- Led a team of 3 developers at ABC Company
+- Built scalable web applications serving 100k+ users
+- Experience with AWS, Docker, microservices architecture
+- Passionate about clean code and user experience
+- Strong problem-solving and communication skills
+- Previous internship at Tech Startup Inc.
+- Contributed to open-source projects on GitHub"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
+            />
+            <p className="mt-2 text-sm text-gray-500">
+              This information will be used by our AI to create personalized responses for job applications. Be as detailed as possible.
+            </p>
           </div>
 
           <div className="mt-6">
