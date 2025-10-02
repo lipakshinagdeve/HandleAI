@@ -163,7 +163,7 @@ export default function Settings() {
     <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
       {/* Header */}
       <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <nav className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <Link href="/" className="text-2xl font-bold" style={{ color: '#ffa3d1' }}>
@@ -171,20 +171,11 @@ export default function Settings() {
               </Link>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="text-gray-700">
-                Welcome, {user.user_metadata?.first_name || user.email}!
-              </span>
               <Link
                 href="/dashboard"
                 className="text-gray-600 hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium"
               >
                 Dashboard
-              </Link>
-              <Link
-                href="/settings"
-                className="text-gray-600 hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium"
-              >
-                Settings
               </Link>
               <button
                 onClick={handleLogout}
