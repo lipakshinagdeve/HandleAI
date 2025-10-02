@@ -94,41 +94,72 @@ export default function Dashboard() {
           </p>
         </div>
 
-        {/* User Info Card */}
+        {/* AI Job Application Tool */}
         <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Your Profile</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Job Application Assistant</h2>
+          <p className="text-gray-600 mb-6">
+            Paste any job application link and provide your information. Our AI will automatically fill out the application with personalized answers.
+          </p>
+          
+          <div className="space-y-6">
+            {/* Job Link Input */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Name</label>
-              <p className="mt-1 text-sm text-gray-900">
-                {user.user_metadata?.first_name || 'Not provided'} {user.user_metadata?.last_name || ''}
-              </p>
+              <label htmlFor="jobLink" className="block text-sm font-medium text-gray-700 mb-2">
+                Job Application Link
+              </label>
+              <input
+                type="url"
+                id="jobLink"
+                placeholder="https://company.com/careers/job-application"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
+              />
             </div>
+
+            {/* User Information Textarea */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email</label>
-              <p className="mt-1 text-sm text-gray-900">{user.email}</p>
+              <label htmlFor="userInfo" className="block text-sm font-medium text-gray-700 mb-2">
+                Your Information & Background
+              </label>
+              <textarea
+                id="userInfo"
+                rows={8}
+                placeholder="Tell us about yourself, your skills, experience, education, achievements, and any other relevant information. The AI will use this to personalize your job applications.
+
+Example:
+- 5 years of software development experience
+- Proficient in React, Node.js, Python
+- Bachelor's in Computer Science from XYZ University
+- Led a team of 3 developers at ABC Company
+- Built scalable web applications serving 100k+ users
+- Passionate about clean code and user experience"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
+              />
             </div>
+
+            {/* Action Button */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Phone</label>
-              <p className="mt-1 text-sm text-gray-900">
-                {user.user_metadata?.phone_number || 'Not provided'}
-              </p>
+              <button
+                className="w-full text-white px-6 py-3 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
+                style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
+              >
+                🤖 Generate Personalized Application
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Dashboard Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Application Metrics */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H8a2 2 0 01-2-2V8a2 2 0 012-2V6" />
-                </svg>
+                <div className="flex items-center justify-center h-10 w-10 rounded-full" style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}>
+                  <span className="text-white font-semibold">📝</span>
+                </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Job Applications</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Applications Submitted</dt>
                   <dd className="text-lg font-medium text-gray-900">0</dd>
                 </dl>
               </div>
@@ -138,13 +169,13 @@ export default function Dashboard() {
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-green-100">
+                  <span className="text-green-600 font-semibold">📞</span>
+                </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Interviews Scheduled</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Interviews</dt>
                   <dd className="text-lg font-medium text-gray-900">0</dd>
                 </dl>
               </div>
@@ -154,56 +185,54 @@ export default function Dashboard() {
           <div className="bg-white shadow rounded-lg p-6">
             <div className="flex items-center">
               <div className="flex-shrink-0">
-                <svg className="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                </svg>
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-blue-100">
+                  <span className="text-blue-600 font-semibold">📈</span>
+                </div>
               </div>
               <div className="ml-5 w-0 flex-1">
                 <dl>
-                  <dt className="text-sm font-medium text-gray-500 truncate">Success Rate</dt>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Response Rate</dt>
                   <dd className="text-lg font-medium text-gray-900">0%</dd>
                 </dl>
               </div>
             </div>
           </div>
+
+          <div className="bg-white shadow rounded-lg p-6">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <div className="flex items-center justify-center h-10 w-10 rounded-full bg-yellow-100">
+                  <span className="text-yellow-600 font-semibold">⏱️</span>
+                </div>
+              </div>
+              <div className="ml-5 w-0 flex-1">
+                <dl>
+                  <dt className="text-sm font-medium text-gray-500 truncate">Time Saved</dt>
+                  <dd className="text-lg font-medium text-gray-900">0h</dd>
+                </dl>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Getting Started */}
-        <div className="mt-8 bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Getting Started</h2>
-          <div className="space-y-4">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-100">
-                  <span className="text-sm font-medium text-purple-600">1</span>
-                </div>
+        {/* Recent Applications */}
+        <div className="bg-white shadow rounded-lg p-6">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold text-gray-900">Recent Applications</h2>
+            <button className="text-sm text-gray-500 hover:text-gray-700">View All</button>
+          </div>
+          
+          <div className="overflow-hidden">
+            <div className="text-center py-12">
+              <div className="mx-auto h-12 w-12 text-gray-400">
+                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
               </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-900">Complete your profile</h3>
-                <p className="text-sm text-gray-500">Add more details about your skills and experience.</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-100">
-                  <span className="text-sm font-medium text-purple-600">2</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-900">Set job preferences</h3>
-                <p className="text-sm text-gray-500">Tell us what kind of jobs you&apos;re looking for.</p>
-              </div>
-            </div>
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <div className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-100">
-                  <span className="text-sm font-medium text-purple-600">3</span>
-                </div>
-              </div>
-              <div className="ml-4">
-                <h3 className="text-sm font-medium text-gray-900">Start applying</h3>
-                <p className="text-sm text-gray-500">Let our AI find and apply to relevant jobs for you.</p>
-              </div>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">No applications yet</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                Start by pasting a job application link above to get started with AI-powered applications.
+              </p>
             </div>
           </div>
         </div>
@@ -211,3 +240,4 @@ export default function Dashboard() {
     </div>
   );
 }
+
