@@ -249,7 +249,7 @@ export class JobApplicationAutomator {
 
   // Keep browser open for user to review and submit
   async keepOpenForReview(): Promise<void> {
-    console.log('✅ Form filled! Browser will stay open for you to review and submit.');
+    console.log('✅ Form filled! Browser will stay open for you to review and submit. ');
     // Don't close the browser - let user review and submit manually
   }
 }
