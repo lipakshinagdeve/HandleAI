@@ -173,7 +173,7 @@ export default function Settings() {
             <div className="flex items-center space-x-4">
               <Link
                 href="/dashboard"
-                className="text-gray-600 hover:opacity-80 px-3 py-2 rounded-md text-sm font-medium"
+                className="text-gray-600 hover:opacity-80 py-2 rounded-md text-sm font-medium"
               >
                 Dashboard
               </Link>
