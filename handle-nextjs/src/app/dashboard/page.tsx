@@ -23,8 +23,6 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState('');
   const [applicationsCount, setApplicationsCount] = useState(0);
-  const [generatedResponses, setGeneratedResponses] = useState<Record<string, string> | null>(null);
-  const [showResponses, setShowResponses] = useState(false);
 
   useEffect(() => {
     // Check if user is logged in
@@ -159,7 +157,7 @@ export default function Dashboard() {
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Job Application Assistant</h2>
           <p className="text-gray-600 mb-6">
-            Paste any job application link below. Our AI will open the application in a new browser window and automatically fill out all the form fields with personalized answers based on your profile information. You'll see the browser filling out the form in real-time!
+            Paste any job application link below. Our AI will open the application in a new browser window and automatically fill out all the form fields with personalized answers based on your profile information. You&apos;ll see the browser filling out the form in real-time!
           </p>
           
           <div className="space-y-6">

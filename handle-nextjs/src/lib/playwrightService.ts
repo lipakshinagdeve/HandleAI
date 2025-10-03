@@ -270,7 +270,7 @@ export class JobApplicationAutomator {
                 el.style.border = '';
                 el.style.backgroundColor = '';
               });
-            } catch (e) {
+            } catch {
               // Element might be gone, ignore
             }
           }, 2000);
@@ -286,7 +286,15 @@ export class JobApplicationAutomator {
     console.log('🎉 Form filling completed!');
   }
 
-  private determineFieldPurpose(field: any): string {
+  private determineFieldPurpose(field: {
+    name: string;
+    id: string;
+    placeholder: string;
+    className: string;
+    ariaLabel: string;
+    type: string;
+    tagName: string;
+  }): string {
     const allText = `${field.name} ${field.id} ${field.placeholder} ${field.className} ${field.ariaLabel}`.toLowerCase();
     
     // Check for common field patterns
