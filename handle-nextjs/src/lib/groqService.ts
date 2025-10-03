@@ -101,7 +101,7 @@ Return ONLY a JSON object with field names as keys and responses as values:
       console.error('Cleaned Response:', cleanedResponse);
       
       // Fallback: try to fix common JSON issues
-      let fixedResponse = cleanedResponse
+      const fixedResponse = cleanedResponse
         .replace(/,\s*}/g, '}')  // Remove trailing commas
         .replace(/,\s*]/g, ']')  // Remove trailing commas in arrays
         .replace(/([{,]\s*)(\w+):/g, '$1"$2":')  // Add quotes to unquoted keys
