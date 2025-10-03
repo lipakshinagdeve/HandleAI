@@ -86,9 +86,34 @@ Return ONLY a JSON object with field names as keys and responses as values:
       cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
     }
 
-    // Parse the JSON response
-    const responses = JSON.parse(cleanedResponse);
-    return responses;
+    // Try to extract JSON from the response if it's mixed with other text
+    const jsonMatch = cleanedResponse.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleanedResponse = jsonMatch[0];
+    }
+
+    // Parse the JSON response with better error handling
+    try {
+      const responses = JSON.parse(cleanedResponse);
+      return responses;
+    } catch (parseError) {
+      console.error('JSON Parse Error:', parseError);
+      console.error('Cleaned Response:', cleanedResponse);
+      
+      // Fallback: try to fix common JSON issues
+      let fixedResponse = cleanedResponse
+        .replace(/,\s*}/g, '}')  // Remove trailing commas
+        .replace(/,\s*]/g, ']')  // Remove trailing commas in arrays
+        .replace(/([{,]\s*)(\w+):/g, '$1"$2":')  // Add quotes to unquoted keys
+        .replace(/:\s*'([^']*)'/g, ': "$1"');  // Replace single quotes with double quotes
+      
+      try {
+        return JSON.parse(fixedResponse);
+      } catch (secondError) {
+        console.error('Even fixed JSON failed:', secondError);
+        throw new Error('AI generated invalid JSON response');
+      }
+    }
   } catch (error) {
     console.error('Error generating personalized responses:', error);
     throw new Error('Failed to generate personalized responses');

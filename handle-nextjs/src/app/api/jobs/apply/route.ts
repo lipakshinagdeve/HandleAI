@@ -74,8 +74,9 @@ export async function POST(request: NextRequest) {
       });
 
     } catch (error) {
-      // Close browser on error
-      await automator.close();
+      // Keep browser open even on error so user can manually fill the form
+      console.log('❌ Automation failed, but browser will stay open for manual completion');
+      await automator.keepOpenForReview();
       throw error;
     }
 
