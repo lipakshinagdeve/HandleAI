@@ -78,8 +78,16 @@ Return ONLY a JSON object with field names as keys and responses as values:
       throw new Error('No response from Groq API');
     }
 
+    // Clean the response text - remove markdown code blocks if present
+    let cleanedResponse = responseText.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedResponse.startsWith('```')) {
+      cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
     // Parse the JSON response
-    const responses = JSON.parse(responseText);
+    const responses = JSON.parse(cleanedResponse);
     return responses;
   } catch (error) {
     console.error('Error generating personalized responses:', error);
@@ -126,7 +134,15 @@ Return ONLY a JSON object with:
       throw new Error('No response from Groq API');
     }
 
-    return JSON.parse(responseText);
+    // Clean the response text - remove markdown code blocks if present
+    let cleanedResponse = responseText.trim();
+    if (cleanedResponse.startsWith('```json')) {
+      cleanedResponse = cleanedResponse.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedResponse.startsWith('```')) {
+      cleanedResponse = cleanedResponse.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+
+    return JSON.parse(cleanedResponse);
   } catch (error) {
     console.error('Error analyzing job description:', error);
     throw new Error('Failed to analyze job description');
