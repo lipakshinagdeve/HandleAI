@@ -4,6 +4,16 @@ import { generatePersonalizedResponses, UserBackground } from '@/lib/groqService
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if we're in a serverless environment (production)
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+    
+    if (isServerless) {
+      return NextResponse.json({
+        success: false,
+        message: 'Browser automation is not available in production. This feature requires a local environment with display capabilities. Please run the application locally to use browser automation.'
+      }, { status: 400 });
+    }
+
     const { jobUrl, userBackground } = await request.json();
 
     if (!jobUrl || !userBackground) {

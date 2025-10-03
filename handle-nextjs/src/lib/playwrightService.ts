@@ -7,27 +7,20 @@ export class JobApplicationAutomator {
 
   async initialize() {
     try {
-      // Try to connect to existing browser first, otherwise launch new one
-      try {
-        // Try to connect to existing Chrome instance
-        this.browser = await chromium.connectOverCDP('http://localhost:9222');
-        console.log('✅ Connected to existing browser instance');
-      } catch (connectError) {
-        // Launch new browser if can't connect to existing one
-        this.browser = await chromium.launch({
-          headless: false, // Keep visible so user can see what's happening
-          slowMo: 2000, // Slow down actions for better visibility
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-web-security',
-            '--disable-features=VizDisplayCompositor',
-            '--remote-debugging-port=9222' // Enable remote debugging for future connections
-          ]
-        });
-        console.log('✅ Browser launched in visible mode for automation');
-      }
+      // Launch browser with proper settings
+      this.browser = await chromium.launch({
+        headless: false, // Keep visible so user can see what's happening
+        slowMo: 1000, // Slow down actions for better visibility
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor',
+          '--new-window' // Force new window instead of replacing existing tabs
+        ]
+      });
+      console.log('✅ Browser launched in visible mode for automation');
     } catch (error) {
       console.error('Failed to launch browser:', error);
       throw new Error('Could not launch browser for automation. This feature requires a local environment with display capabilities.');
@@ -360,6 +353,20 @@ export class JobApplicationAutomator {
     console.log('🎉 Automation completed! Browser will stay open for you to review and submit the application.');
     this.browser = null;
     this.page = null;
+  }
+
+  // Force close the browser (for cleanup)
+  async forceClose(): Promise<void> {
+    if (this.browser) {
+      try {
+        await this.browser.close();
+        console.log('🔒 Browser closed successfully');
+      } catch (error) {
+        console.error('Error closing browser:', error);
+      }
+      this.browser = null;
+      this.page = null;
+    }
   }
 
   // Keep browser open for user to review and submit
