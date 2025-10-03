@@ -7,24 +7,22 @@ export class JobApplicationAutomator {
 
   async initialize() {
     try {
-      // Try to launch in non-headless mode first
+      // Always try visible mode first so user can see the automation
       this.browser = await chromium.launch({
         headless: false, // Keep visible so user can see what's happening
-        slowMo: 1000, // Slow down actions for better visibility
+        slowMo: 2000, // Slow down actions for better visibility
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-web-security',
+          '--disable-features=VizDisplayCompositor'
+        ]
       });
+      console.log('✅ Browser launched in visible mode for automation');
     } catch (error) {
-      console.warn('Failed to launch browser in GUI mode, trying headless mode:', error);
-      try {
-        // Fallback to headless mode
-        this.browser = await chromium.launch({
-          headless: true,
-          slowMo: 500,
-        });
-        console.log('✅ Browser launched in headless mode');
-      } catch (headlessError) {
-        console.error('Failed to launch browser in both GUI and headless modes:', headlessError);
-        throw new Error('Could not launch browser. Please ensure Playwright is properly installed.');
-      }
+      console.error('Failed to launch browser:', error);
+      throw new Error('Could not launch browser for automation. This feature requires a local environment with display capabilities.');
     }
     
     const context = await this.browser.newContext({
@@ -188,54 +186,156 @@ export class JobApplicationAutomator {
       throw new Error('Page not loaded.');
     }
 
-    // Fill each field based on the responses
-    for (const [fieldName, value] of Object.entries(responses)) {
+    console.log('🤖 Starting intelligent form filling...');
+
+    // Get all form fields on the page
+    const formFields = await this.page.$$eval('input, textarea, select', elements => {
+      return elements.map((el, index) => {
+        const element = el as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+        return {
+          index,
+          tagName: element.tagName.toLowerCase(),
+          type: element.type || 'text',
+          name: element.name || '',
+          id: element.id || '',
+          placeholder: (element as HTMLInputElement).placeholder || '',
+          className: element.className || '',
+          ariaLabel: element.getAttribute('aria-label') || '',
+          labelText: '', // Will be filled by finding associated label
+          required: element.hasAttribute('required')
+        };
+      });
+    });
+
+    console.log(`📋 Found ${formFields.length} form fields to analyze`);
+
+    // Fill each field intelligently
+    for (let i = 0; i < formFields.length; i++) {
+      const field = formFields[i];
+      
       try {
-        // Try multiple selectors to find the field
-        const selectors = [
-          `[name="${fieldName}"]`,
-          `#${fieldName}`,
-          `[id="${fieldName}"]`,
-          `[data-testid="${fieldName}"]`
-        ];
-
-        let filled = false;
-        for (const selector of selectors) {
-          try {
-            const element = await this.page.$(selector);
-            if (element) {
-              const tagName = await element.evaluate(el => el.tagName.toLowerCase());
-              const inputType = await element.evaluate(el => 
-                el.tagName.toLowerCase() === 'input' ? (el as HTMLInputElement).type : null
-              );
-
-              // Fill based on element type
-              if (tagName === 'textarea' || inputType === 'text' || inputType === 'email') {
-                await element.fill(value);
-                filled = true;
-                break;
-              } else if (tagName === 'select') {
-                await element.selectOption({ label: value });
-                filled = true;
-                break;
-              }
-            }
-          } catch (error) {
-            // Continue to next selector
-            continue;
-          }
+        // Skip hidden, submit, and button inputs
+        if (field.type === 'hidden' || field.type === 'submit' || field.type === 'button') {
+          continue;
         }
 
-        if (filled) {
-          console.log(`✅ Filled field: ${fieldName} = ${value}`);
-          // Add a small delay between fields
-          await this.page.waitForTimeout(500);
-        } else {
-          console.log(`⚠️ Could not find field: ${fieldName}`);
+        // Get the actual element
+        const element = await this.page.$(`input:nth-of-type(${i + 1}), textarea:nth-of-type(${i + 1}), select:nth-of-type(${i + 1})`);
+        if (!element) continue;
+
+        // Determine what this field is for based on various clues
+        const fieldPurpose = this.determineFieldPurpose(field);
+        console.log(`🔍 Field ${i + 1}: ${fieldPurpose} (${field.type})`);
+
+        // Get the appropriate value for this field
+        const value = this.getValueForField(fieldPurpose, responses);
+        
+        if (value) {
+          // Scroll to the element and highlight it
+          await element.scrollIntoViewIfNeeded();
+          await element.focus();
+          
+          // Add visual feedback
+          await element.evaluate(el => {
+            el.style.border = '3px solid #ffa3d1';
+            el.style.backgroundColor = '#fff0f5';
+          });
+
+          // Fill the field based on its type
+          if (field.tagName === 'select') {
+            // For select elements, try to find matching option
+            const options = await element.$$eval('option', opts => 
+              opts.map(opt => ({ value: opt.value, text: opt.textContent?.trim() || '' }))
+            );
+            
+            const matchingOption = options.find(opt => 
+              opt.text.toLowerCase().includes(value.toLowerCase()) ||
+              opt.value.toLowerCase().includes(value.toLowerCase())
+            );
+            
+            if (matchingOption) {
+              await element.selectOption(matchingOption.value);
+              console.log(`✅ Selected option: ${matchingOption.text}`);
+            }
+          } else {
+            // For input and textarea elements
+            await element.fill(value);
+            console.log(`✅ Filled ${fieldPurpose}: ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`);
+          }
+
+          // Remove highlight after a moment
+          setTimeout(async () => {
+            try {
+              await element.evaluate(el => {
+                el.style.border = '';
+                el.style.backgroundColor = '';
+              });
+            } catch (e) {
+              // Element might be gone, ignore
+            }
+          }, 2000);
+
+          // Wait between fields for visibility
+          await this.page.waitForTimeout(1500);
         }
       } catch (error) {
-        console.error(`Error filling field ${fieldName}:`, error);
+        console.error(`❌ Error filling field ${i + 1}:`, error);
       }
+    }
+
+    console.log('🎉 Form filling completed!');
+  }
+
+  private determineFieldPurpose(field: any): string {
+    const allText = `${field.name} ${field.id} ${field.placeholder} ${field.className} ${field.ariaLabel}`.toLowerCase();
+    
+    // Check for common field patterns
+    if (allText.includes('first') && allText.includes('name')) return 'firstName';
+    if (allText.includes('last') && allText.includes('name')) return 'lastName';
+    if (allText.includes('full') && allText.includes('name')) return 'fullName';
+    if (allText.includes('email')) return 'email';
+    if (allText.includes('phone')) return 'phone';
+    if (allText.includes('cover') && allText.includes('letter')) return 'coverLetter';
+    if (allText.includes('why') && (allText.includes('interested') || allText.includes('apply'))) return 'whyInterested';
+    if (allText.includes('experience')) return 'experience';
+    if (allText.includes('resume')) return 'resume';
+    if (allText.includes('linkedin')) return 'linkedin';
+    if (allText.includes('portfolio')) return 'portfolio';
+    if (allText.includes('website')) return 'website';
+    if (allText.includes('salary')) return 'salary';
+    if (allText.includes('availability') || allText.includes('start')) return 'availability';
+    if (allText.includes('address')) return 'address';
+    if (allText.includes('city')) return 'city';
+    if (allText.includes('state')) return 'state';
+    if (allText.includes('zip') || allText.includes('postal')) return 'zipCode';
+    if (allText.includes('country')) return 'country';
+    
+    // Default based on field type
+    if (field.type === 'email') return 'email';
+    if (field.type === 'tel') return 'phone';
+    if (field.tagName === 'textarea') return 'coverLetter';
+    
+    return 'unknown';
+  }
+
+  private getValueForField(fieldPurpose: string, responses: Record<string, string>): string {
+    switch (fieldPurpose) {
+      case 'firstName': return responses.firstName || '';
+      case 'lastName': return responses.lastName || '';
+      case 'fullName': return `${responses.firstName || ''} ${responses.lastName || ''}`.trim();
+      case 'email': return responses.email || '';
+      case 'phone': return responses.phoneNumber || '';
+      case 'coverLetter': return responses.coverLetter || '';
+      case 'whyInterested': return responses.whyInterested || '';
+      case 'experience': return responses.experience || '';
+      case 'availability': return responses.availability || 'Immediately';
+      case 'salary': return responses.salary || 'Negotiable';
+      default: 
+        // Try to find a matching response key
+        const matchingKey = Object.keys(responses).find(key => 
+          key.toLowerCase().includes(fieldPurpose.toLowerCase())
+        );
+        return matchingKey ? responses[matchingKey] : '';
     }
   }
 

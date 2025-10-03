@@ -71,7 +71,7 @@ export default function Dashboard() {
         backgroundInfo: user.user_metadata?.background_info || ''
       };
 
-      const response = await fetch('/api/jobs/analyze', {
+      const response = await fetch('/api/jobs/apply', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,10 +85,9 @@ export default function Dashboard() {
       const data = await response.json();
 
       if (data.success) {
-        setMessage(`✅ Success! Generated personalized responses for ${data.data.jobTitle} at ${data.data.companyName}.`);
-        setGeneratedResponses(data.data.responses);
-        setShowResponses(true);
+        setMessage(`✅ Success! Browser automation started for ${data.data.jobTitle} at ${data.data.companyName}. Check the new browser window to see the form being filled automatically!`);
         setApplicationsCount(prev => prev + 1);
+        setJobUrl(''); // Clear the input
       } else {
         setMessage(`❌ Error: ${data.message}`);
       }
@@ -160,7 +159,7 @@ export default function Dashboard() {
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Job Application Assistant</h2>
           <p className="text-gray-600 mb-6">
-            Paste any job application link below. Our AI will automatically fill out the application with personalized answers based on your profile information.
+            Paste any job application link below. Our AI will open the application in a new browser window and automatically fill out all the form fields with personalized answers based on your profile information. You'll see the browser filling out the form in real-time!
           </p>
           
           <div className="space-y-6">
@@ -189,7 +188,7 @@ export default function Dashboard() {
                 className="w-full text-white px-6 py-3 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
                 style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
               >
-                {isProcessing ? '🔄 Generating Responses...' : '🤖 Generate Personalized Responses'}
+                {isProcessing ? '🔄 Starting Browser Automation...' : '🤖 Auto-Fill Job Application'}
               </button>
               <p className="text-xs text-gray-500 mt-2 text-center">
                 Make sure to complete your profile information in <Link href="/settings" className="text-pink-500 hover:underline">Settings</Link> first
@@ -205,68 +204,6 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Generated Responses */}
-        {showResponses && generatedResponses && (
-          <div className="bg-white shadow rounded-lg p-6 mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">Generated Responses</h2>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(JSON.stringify(generatedResponses, null, 2));
-                    setMessage('✅ Responses copied to clipboard!');
-                  }}
-                  className="text-sm text-gray-600 hover:text-gray-800 px-3 py-1 border rounded"
-                >
-                  📋 Copy All
-                </button>
-                <button
-                  onClick={() => {
-                    window.open(jobUrl, '_blank');
-                  }}
-                  className="text-sm text-white px-3 py-1 rounded hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
-                >
-                  🔗 Open Job Application
-                </button>
-              </div>
-            </div>
-            
-            <div className="space-y-4 max-h-96 overflow-y-auto">
-              {Object.entries(generatedResponses).map(([field, response]) => (
-                <div key={field} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-medium text-gray-900 capitalize">
-                      {field.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}
-                    </h3>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(response);
-                        setMessage(`✅ ${field} copied to clipboard!`);
-                      }}
-                      className="text-xs text-gray-500 hover:text-gray-700 px-2 py-1 border rounded"
-                    >
-                      📋 Copy
-                    </button>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded text-sm text-gray-700 whitespace-pre-wrap">
-                    {response}
-                  </div>
-                </div>
-              ))}
-            </div>
-            
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg">
-              <h4 className="font-medium text-blue-900 mb-2">📝 How to Use:</h4>
-              <ol className="text-sm text-blue-800 space-y-1">
-                <li>1. Click &quot;Open Job Application&quot; to open the job form in a new tab</li>
-                <li>2. Copy each response and paste it into the corresponding field</li>
-                <li>3. Review and customize the responses as needed</li>
-                <li>4. Submit your application!</li>
-              </ol>
-            </div>
-          </div>
-        )}
 
 
         {/* Recent Applications */}
