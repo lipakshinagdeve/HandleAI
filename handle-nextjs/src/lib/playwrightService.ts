@@ -287,48 +287,51 @@ export class JobApplicationAutomator {
             await element.scrollIntoViewIfNeeded({ timeout: 5000 });
             await element.focus();
           
-          // Add visual feedback
-          await element.evaluate(el => {
-            el.style.border = '3px solid #ffa3d1';
-            el.style.backgroundColor = '#fff0f5';
-          });
+            // Add visual feedback
+            await element.evaluate(el => {
+              el.style.border = '3px solid #ffa3d1';
+              el.style.backgroundColor = '#fff0f5';
+            });
 
-          // Fill the field based on its type
-          if (field.tagName === 'select') {
-            // For select elements, try to find matching option
-            const options = await element.$$eval('option', opts => 
-              opts.map(opt => ({ value: opt.value, text: opt.textContent?.trim() || '' }))
-            );
-            
-            const matchingOption = options.find(opt => 
-              opt.text.toLowerCase().includes(value.toLowerCase()) ||
-              opt.value.toLowerCase().includes(value.toLowerCase())
-            );
-            
-            if (matchingOption) {
-              await element.selectOption(matchingOption.value);
-              console.log(`✅ Selected option: ${matchingOption.text}`);
+            // Fill the field based on its type
+            if (field.tagName === 'select') {
+              // For select elements, try to find matching option
+              const options = await element.$$eval('option', opts => 
+                opts.map(opt => ({ value: opt.value, text: opt.textContent?.trim() || '' }))
+              );
+              
+              const matchingOption = options.find(opt => 
+                opt.text.toLowerCase().includes(value.toLowerCase()) ||
+                opt.value.toLowerCase().includes(value.toLowerCase())
+              );
+              
+              if (matchingOption) {
+                await element.selectOption(matchingOption.value);
+                console.log(`✅ Selected option: ${matchingOption.text}`);
+              }
+            } else {
+              // For input and textarea elements
+              await element.fill(value);
+              console.log(`✅ Filled ${fieldPurpose}: ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`);
             }
-          } else {
-            // For input and textarea elements
-            await element.fill(value);
-            console.log(`✅ Filled ${fieldPurpose}: ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`);
+
+            // Remove highlight after a moment
+            setTimeout(async () => {
+              try {
+                await element.evaluate(el => {
+                  el.style.border = '';
+                  el.style.backgroundColor = '';
+                });
+              } catch {
+                // Element might be gone, ignore
+              }
+            }, 2000);
+
+            // Wait between fields for visibility
+            await this.page.waitForTimeout(1000);
+          } catch (fillError) {
+            console.log(`❌ Error interacting with field ${i + 1}: ${fillError}`);
           }
-
-          // Remove highlight after a moment
-          setTimeout(async () => {
-            try {
-              await element.evaluate(el => {
-                el.style.border = '';
-                el.style.backgroundColor = '';
-              });
-            } catch {
-              // Element might be gone, ignore
-            }
-          }, 2000);
-
-          // Wait between fields for visibility
-          await this.page.waitForTimeout(1000);
         } else {
           console.log(`⚠️ No value found for field: ${fieldPurpose}`);
         }

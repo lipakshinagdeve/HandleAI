@@ -7,9 +7,8 @@ This uses AI-powered visual understanding to fill forms intelligently.
 import asyncio
 import json
 import sys
+import os
 from browser_use import Agent
-from browser_use.browser import Browser, BrowserConfig
-from browser_use.controller import Controller
 
 async def fill_job_application(job_url: str, user_data: dict):
     """
@@ -19,17 +18,6 @@ async def fill_job_application(job_url: str, user_data: dict):
         job_url: The URL of the job application
         user_data: Dictionary containing user information
     """
-    
-    # Configure browser
-    browser_config = BrowserConfig(
-        headless=False,  # Keep visible for user to see
-        disable_security=True,
-        window_size=(1280, 720)
-    )
-    
-    # Create browser and agent
-    browser = Browser(config=browser_config)
-    controller = Controller()
     
     # Create AI agent with instructions
     agent = Agent(
@@ -62,9 +50,7 @@ async def fill_job_application(job_url: str, user_data: dict):
         9. If you encounter any errors or can't find certain fields, continue with the ones you can fill
         
         Please be thorough and intelligent about understanding what each field is asking for based on its label, placeholder text, or surrounding context.
-        """,
-        browser=browser,
-        controller=controller
+        """
     )
     
     try:

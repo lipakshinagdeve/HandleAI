@@ -35,7 +35,12 @@ export async function POST(request: NextRequest) {
         scriptPath,
         jobUrl,
         JSON.stringify(userData)
-      ]);
+      ], {
+        env: {
+          ...process.env,
+          OPENAI_API_KEY: process.env.OPENAI_API_KEY
+        }
+      });
 
       let output = '';
       let errorOutput = '';
