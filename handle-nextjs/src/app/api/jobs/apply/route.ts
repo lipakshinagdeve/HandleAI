@@ -13,7 +13,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }, { status: 400 });
     }
 
-    console.log('🚀 Starting Browser Use AI automation...');
+    console.log('🚀 Starting Selenium automation...');
     console.log('📝 Job URL:', jobUrl);
     console.log('👤 User:', userBackground.firstName, userBackground.lastName);
 
@@ -26,11 +26,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       backgroundInfo: userBackground.backgroundInfo || 'I am a motivated professional looking for new opportunities.'
     };
 
-    // Path to the Python script
-    const scriptPath = path.join(process.cwd(), 'browser_automation.py');
+    // Path to the Selenium Python script
+    const scriptPath = path.join(process.cwd(), 'selenium_automation.py');
     
     return new Promise<NextResponse>((resolve) => {
-      // Spawn Python process with Browser Use
+      // Spawn Python process with Selenium
       const pythonProcess = spawn('python3', [
         scriptPath,
         jobUrl,
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ], {
         env: {
           ...process.env,
-          OPENAI_API_KEY: process.env.OPENAI_API_KEY
+          GROQ_API_KEY: process.env.GROQ_API_KEY
         }
       });
 
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
 
       pythonProcess.on('close', (code) => {
-        console.log(`🔄 Browser Use process exited with code ${code}`);
+        console.log(`🔄 Selenium process exited with code ${code}`);
         
         try {
           // Try to parse the last line as JSON result
@@ -72,14 +72,14 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           if (code === 0) {
             resolve(NextResponse.json({
               success: true,
-              message: 'Browser Use automation completed! Please review the form in the opened browser.',
+              message: 'Selenium automation completed! Please review the form in the opened browser.',
               output: output,
               logs: output
             }));
           } else {
             resolve(NextResponse.json({
               success: false,
-              message: 'Browser Use automation failed',
+              message: 'Selenium automation failed',
               error: errorOutput || output,
               code: code
             }, { status: 500 }));
@@ -88,10 +88,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
 
       pythonProcess.on('error', (error) => {
-        console.error('❌ Failed to start Browser Use process:', error);
+        console.error('❌ Failed to start Selenium process:', error);
         resolve(NextResponse.json({
           success: false,
-          message: 'Failed to start browser automation. Please ensure Python and Browser Use are installed.',
+          message: 'Failed to start browser automation. Please ensure Python and Selenium are installed.',
           error: error.message
         }, { status: 500 }));
       });
