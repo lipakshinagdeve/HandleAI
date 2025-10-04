@@ -227,14 +227,20 @@ export class JobApplicationAutomator {
     });
 
     console.log(`📋 Found ${formFields.length} form fields to analyze`);
+    
+    // Debug: Log all form fields
+    formFields.forEach((field, index) => {
+      console.log(`📝 Field ${index + 1}: type="${field.type}", name="${field.name}", id="${field.id}", placeholder="${field.placeholder}"`);
+    });
 
     // Fill each field intelligently
     for (let i = 0; i < formFields.length; i++) {
       const field = formFields[i];
       
       try {
-        // Skip hidden, submit, and button inputs
-        if (field.type === 'hidden' || field.type === 'submit' || field.type === 'button') {
+        // Skip hidden, submit, button, and file inputs
+        if (field.type === 'hidden' || field.type === 'submit' || field.type === 'button' || field.type === 'file') {
+          console.log(`⏭️ Skipping ${field.type} input field ${i + 1}`);
           continue;
         }
 
@@ -243,7 +249,9 @@ export class JobApplicationAutomator {
         
         // Try different selectors to find the element
         if (field.id) {
-          element = await this.page.$(`#${field.id}`);
+          // Escape CSS selector for IDs that start with numbers or contain special chars
+          const escapedId = field.id.replace(/^(\d)/, '\\3$1 ').replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+          element = await this.page.$(`[id="${field.id}"]`); // Use attribute selector instead
         } else if (field.name) {
           element = await this.page.$(`[name="${field.name}"]`);
         } else {
@@ -267,9 +275,17 @@ export class JobApplicationAutomator {
         const value = this.getValueForField(fieldPurpose, responses);
         
         if (value) {
-          // Scroll to the element and highlight it
-          await element.scrollIntoViewIfNeeded();
-          await element.focus();
+          try {
+            // Check if element is visible first
+            const isVisible = await element.isVisible();
+            if (!isVisible) {
+              console.log(`⚠️ Element ${i + 1} is not visible, skipping`);
+              continue;
+            }
+
+            // Scroll to the element and highlight it
+            await element.scrollIntoViewIfNeeded({ timeout: 5000 });
+            await element.focus();
           
           // Add visual feedback
           await element.evaluate(el => {
@@ -312,10 +328,13 @@ export class JobApplicationAutomator {
           }, 2000);
 
           // Wait between fields for visibility
-          await this.page.waitForTimeout(1500);
+          await this.page.waitForTimeout(1000);
+        } else {
+          console.log(`⚠️ No value found for field: ${fieldPurpose}`);
         }
       } catch (error) {
-        console.error(`❌ Error filling field ${i + 1}:`, error);
+        console.log(`❌ Error processing field ${i + 1}: ${error}`);
+        // Continue with next field instead of stopping
       }
     }
 
