@@ -1,4 +1,5 @@
 import { chromium, Browser, Page } from 'playwright';
+import chromiumPkg from '@sparticuz/chromium';
 import { JobFormField } from './groqService';
 
 export class JobApplicationAutomator {
@@ -7,23 +8,40 @@ export class JobApplicationAutomator {
 
   async initialize() {
     try {
-      // Launch browser with proper settings
-      this.browser = await chromium.launch({
-        headless: false, // Keep visible so user can see what's happening
-        slowMo: 1000, // Slow down actions for better visibility
-        args: [
-          '--no-sandbox',
-          '--disable-setuid-sandbox',
-          '--disable-dev-shm-usage',
-          '--disable-web-security',
-          '--disable-features=VizDisplayCompositor',
-          '--new-window' // Force new window instead of replacing existing tabs
-        ]
-      });
-      console.log('✅ Browser launched in visible mode for automation');
+      const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+      
+      if (isServerless) {
+        // Use lightweight Chromium for serverless environments
+        this.browser = await chromium.launch({
+          executablePath: await chromiumPkg.executablePath(),
+          args: [
+            ...chromiumPkg.args,
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-web-security'
+          ],
+          headless: chromiumPkg.headless
+        });
+        console.log('✅ Browser launched in serverless mode');
+      } else {
+        // Use regular Chromium for local development
+        this.browser = await chromium.launch({
+          headless: false, // Keep visible so user can see what's happening
+          slowMo: 1000, // Slow down actions for better visibility
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor'
+          ]
+        });
+        console.log('✅ Browser launched in visible mode for automation');
+      }
     } catch (error) {
       console.error('Failed to launch browser:', error);
-      throw new Error('Could not launch browser for automation. This feature requires a local environment with display capabilities.');
+      throw new Error('Could not launch browser for automation. Please ensure Playwright is properly installed.');
     }
     
     const context = await this.browser.newContext({
@@ -220,9 +238,26 @@ export class JobApplicationAutomator {
           continue;
         }
 
-        // Get the actual element
-        const element = await this.page.$(`input:nth-of-type(${i + 1}), textarea:nth-of-type(${i + 1}), select:nth-of-type(${i + 1})`);
-        if (!element) continue;
+        // Get the actual element using a more reliable selector
+        let element = null;
+        
+        // Try different selectors to find the element
+        if (field.id) {
+          element = await this.page.$(`#${field.id}`);
+        } else if (field.name) {
+          element = await this.page.$(`[name="${field.name}"]`);
+        } else {
+          // Fallback to index-based selection
+          const allFields = await this.page.$$('input, textarea, select');
+          if (field.index < allFields.length) {
+            element = allFields[field.index];
+          }
+        }
+        
+        if (!element) {
+          console.log(`⚠️ Could not find element for field ${i + 1}`);
+          continue;
+        }
 
         // Determine what this field is for based on various clues
         const fieldPurpose = this.determineFieldPurpose(field);
