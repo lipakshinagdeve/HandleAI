@@ -249,8 +249,7 @@ export class JobApplicationAutomator {
         
         // Try different selectors to find the element
         if (field.id) {
-          // Escape CSS selector for IDs that start with numbers or contain special chars
-          const escapedId = field.id.replace(/^(\d)/, '\\3$1 ').replace(/([!"#$%&'()*+,./:;<=>?@[\\\]^`{|}~])/g, '\\$1');
+          // Use attribute selector for IDs that start with numbers or contain special chars
           element = await this.page.$(`[id="${field.id}"]`); // Use attribute selector instead
         } else if (field.name) {
           element = await this.page.$(`[name="${field.name}"]`);

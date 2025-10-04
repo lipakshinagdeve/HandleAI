@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     // Path to the Python script
     const scriptPath = path.join(process.cwd(), 'browser_automation.py');
     
-    return new Promise((resolve) => {
+    return new Promise<NextResponse>((resolve) => {
       // Spawn Python process with Browser Use
       const pythonProcess = spawn('python3', [
         scriptPath,
