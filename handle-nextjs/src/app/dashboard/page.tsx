@@ -157,7 +157,7 @@ export default function Dashboard() {
         <div className="bg-white shadow rounded-lg p-6 mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Job Application Assistant</h2>
           <p className="text-gray-600 mb-6">
-            Paste any job application link below. Our AI will open the application in a new browser window and automatically fill out all the form fields with personalized answers based on your profile information. You&apos;ll see the browser filling out the form in real-time!
+            Paste any job application link below. Our AI will use visual understanding to intelligently identify and fill form fields, regardless of the website&apos;s HTML structure. The AI can see the page like a human and understand what each field is asking for based on labels, context, and visual cues!
           </p>
           
           <div className="space-y-6">

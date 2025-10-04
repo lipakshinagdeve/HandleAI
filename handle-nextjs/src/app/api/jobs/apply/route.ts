@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { JobApplicationAutomator } from '@/lib/playwrightService';
-import { generatePersonalizedResponses, UserBackground } from '@/lib/groqService';
+import { spawn } from 'child_process';
+import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,72 +13,84 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('🚀 Starting job application automation...');
+    console.log('🚀 Starting Browser Use AI automation...');
     console.log('📝 Job URL:', jobUrl);
     console.log('👤 User:', userBackground.firstName, userBackground.lastName);
 
-    // Initialize Playwright
-    const automator = new JobApplicationAutomator();
-    try {
-      await automator.initialize();
-    } catch (initError) {
-      console.error('❌ Failed to initialize Playwright:', initError);
-      return NextResponse.json({
-        success: false,
-        message: 'Failed to initialize browser automation. Please ensure Playwright is properly installed.',
-        error: initError instanceof Error ? initError.message : 'Unknown initialization error'
-      }, { status: 500 });
-    }
+    // Prepare user data for Python script
+    const userData = {
+      firstName: userBackground.firstName || '',
+      lastName: userBackground.lastName || '',
+      email: userBackground.email || '',
+      phone: userBackground.phone || '',
+      backgroundInfo: userBackground.backgroundInfo || 'I am a motivated professional looking for new opportunities.'
+    };
 
-    try {
-      // Navigate to job application
-      console.log('🌐 Navigating to job application...');
-      await automator.navigateToJobApplication(jobUrl);
+    // Path to the Python script
+    const scriptPath = path.join(process.cwd(), 'browser_automation.py');
+    
+    return new Promise((resolve) => {
+      // Spawn Python process with Browser Use
+      const pythonProcess = spawn('python3', [
+        scriptPath,
+        jobUrl,
+        JSON.stringify(userData)
+      ]);
 
-      // Analyze the form
-      console.log('🔍 Analyzing job application form...');
-      const formAnalysis = await automator.analyzeForm();
-      
-      console.log('📋 Found form fields:', formAnalysis.formFields.length);
-      console.log('🏢 Company:', formAnalysis.companyName);
-      console.log('💼 Position:', formAnalysis.jobTitle);
+      let output = '';
+      let errorOutput = '';
 
-      // Generate personalized responses using Groq AI
-      console.log('🤖 Generating personalized responses...');
-      const jobData = {
-        companyName: formAnalysis.companyName,
-        jobTitle: formAnalysis.jobTitle,
-        jobDescription: formAnalysis.jobDescription,
-        formFields: formAnalysis.formFields
-      };
+      pythonProcess.stdout.on('data', (data) => {
+        const chunk = data.toString();
+        console.log(chunk);
+        output += chunk;
+      });
 
-      const responses = await generatePersonalizedResponses(jobData, userBackground);
-      console.log('✅ Generated responses for', Object.keys(responses).length, 'fields');
+      pythonProcess.stderr.on('data', (data) => {
+        const chunk = data.toString();
+        console.error(chunk);
+        errorOutput += chunk;
+      });
 
-      // Fill the form
-      console.log('✏️ Filling out the application form...');
-      await automator.fillForm(responses);
-
-      // Keep browser open for user review
-      await automator.keepOpenForReview();
-
-      return NextResponse.json({
-        success: true,
-        message: 'Job application form filled successfully! Please review and submit.',
-        data: {
-          companyName: formAnalysis.companyName,
-          jobTitle: formAnalysis.jobTitle,
-          fieldsFound: formAnalysis.formFields.length,
-          fieldsFilled: Object.keys(responses).length
+      pythonProcess.on('close', (code) => {
+        console.log(`🔄 Browser Use process exited with code ${code}`);
+        
+        try {
+          // Try to parse the last line as JSON result
+          const lines = output.trim().split('\n');
+          const lastLine = lines[lines.length - 1];
+          const result = JSON.parse(lastLine);
+          
+          resolve(NextResponse.json(result));
+        } catch (parseError) {
+          // If parsing fails, return a generic success message
+          if (code === 0) {
+            resolve(NextResponse.json({
+              success: true,
+              message: 'Browser Use automation completed! Please review the form in the opened browser.',
+              output: output,
+              logs: output
+            }));
+          } else {
+            resolve(NextResponse.json({
+              success: false,
+              message: 'Browser Use automation failed',
+              error: errorOutput || output,
+              code: code
+            }, { status: 500 }));
+          }
         }
       });
 
-    } catch (error) {
-      // Keep browser open even on error so user can manually fill the form
-      console.log('❌ Automation failed, but browser will stay open for manual completion');
-      await automator.keepOpenForReview();
-      throw error;
-    }
+      pythonProcess.on('error', (error) => {
+        console.error('❌ Failed to start Browser Use process:', error);
+        resolve(NextResponse.json({
+          success: false,
+          message: 'Failed to start browser automation. Please ensure Python and Browser Use are installed.',
+          error: error.message
+        }, { status: 500 }));
+      });
+    });
 
   } catch (error) {
     console.error('❌ Job application automation failed:', error);
