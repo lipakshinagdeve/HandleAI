@@ -206,6 +206,20 @@ def fill_job_application(job_url, user_data):
             EC.presence_of_element_located((By.TAG_NAME, "body"))
         )
         
+        # Wait longer for dynamic content and forms to load
+        time.sleep(5)
+        
+        # Try to wait for form elements specifically
+        try:
+            WebDriverWait(driver, 10).until(
+                lambda d: len(d.find_elements(By.TAG_NAME, "input")) > 0 or 
+                         len(d.find_elements(By.TAG_NAME, "textarea")) > 0 or
+                         len(d.find_elements(By.TAG_NAME, "select")) > 0
+            )
+            print("✅ Form elements detected")
+        except TimeoutException:
+            print("⚠️ No form elements found after waiting - page might not have forms or they're loaded differently")
+        
         # Try to extract company name and job title from the page
         company_name = ""
         job_title = ""
@@ -241,29 +255,67 @@ def fill_job_application(job_url, user_data):
         print(f"🏢 Company: {company_name or 'Unknown'}")
         print(f"💼 Position: {job_title or 'Unknown'}")
         
-        # Find all form fields
-        form_fields = []
+        # Find all form fields - get fresh elements each time to avoid stale references
+        def get_all_fields():
+            inputs = driver.find_elements(By.TAG_NAME, "input")
+            textareas = driver.find_elements(By.TAG_NAME, "textarea")
+            selects = driver.find_elements(By.TAG_NAME, "select")
+            return inputs + textareas + selects
         
-        # Find input fields
-        inputs = driver.find_elements(By.TAG_NAME, "input")
-        textareas = driver.find_elements(By.TAG_NAME, "textarea")
-        selects = driver.find_elements(By.TAG_NAME, "select")
-        
-        all_fields = inputs + textareas + selects
-        
+        all_fields = get_all_fields()
         print(f"📋 Found {len(all_fields)} form fields")
+        
+        # Debug: Print page title and URL to confirm we're on the right page
+        print(f"🔍 Page title: {driver.title}")
+        print(f"🔍 Current URL: {driver.current_url}")
+        
+        # Debug: Check if there are any forms on the page
+        forms = driver.find_elements(By.TAG_NAME, "form")
+        print(f"🔍 Found {len(forms)} form elements")
+        
+        # Debug: Look for common form field patterns
+        all_elements = driver.find_elements(By.CSS_SELECTOR, "input, textarea, select, button")
+        print(f"🔍 Found {len(all_elements)} total interactive elements")
+        
+        if len(all_elements) > 0:
+            print("🔍 Interactive elements found:")
+            for i, elem in enumerate(all_elements[:10]):  # Show first 10
+                try:
+                    tag = elem.tag_name
+                    elem_type = elem.get_attribute('type') or 'N/A'
+                    elem_id = elem.get_attribute('id') or 'N/A'
+                    elem_name = elem.get_attribute('name') or 'N/A'
+                    print(f"   {i+1}. {tag} (type: {elem_type}, id: {elem_id}, name: {elem_name})")
+                except:
+                    print(f"   {i+1}. Element info unavailable")
+        
+        if len(all_fields) == 0:
+            print("⚠️ No form fields found. The page might:")
+            print("   - Be loading content dynamically")
+            print("   - Require user interaction first")
+            print("   - Use non-standard form elements")
+            print("   - Be behind authentication")
+            print("🔍 Browser will stay open for manual inspection")
         
         filled_count = 0
         
         # Process each field
-        for i, field in enumerate(all_fields):
+        for i in range(len(all_fields)):
             try:
+                # Get fresh element to avoid stale reference
+                current_fields = get_all_fields()
+                if i >= len(current_fields):
+                    print(f"⚠️ Field {i + 1} no longer exists, skipping")
+                    continue
+                    
+                field = current_fields[i]
+                
                 # Skip hidden, submit, button, and file inputs
                 field_type = field.get_attribute('type') or ''
                 if field_type in ['hidden', 'submit', 'button', 'file']:
                     print(f"⏭️ Skipping {field_type} field {i + 1}")
                     continue
-                
+
                 # Check if field is visible
                 if not field.is_displayed():
                     print(f"⚠️ Field {i + 1} is not visible, skipping")
