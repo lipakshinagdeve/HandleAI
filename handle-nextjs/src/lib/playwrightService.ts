@@ -21,7 +21,7 @@ export class JobApplicationAutomator {
             '--disable-dev-shm-usage',
             '--disable-web-security'
           ],
-          headless: chromiumPkg.headless
+          headless: true // Always headless in serverless environments
         });
         console.log('✅ Browser launched in serverless mode');
       } else {
