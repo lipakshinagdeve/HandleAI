@@ -1,18 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_ANON_KEY!
-);
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    console.log('Login attempt:', email);
-
-    // Sign in with Supabase
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password
@@ -41,8 +33,6 @@ export async function POST(request: NextRequest) {
         message: 'Login failed' 
       }, { status: 400 });
     }
-
-    console.log('Login successful:', data.user.id);
 
     return NextResponse.json({ 
       success: true, 

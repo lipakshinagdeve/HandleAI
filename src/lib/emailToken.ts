@@ -1,10 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabase';
 
 export function generateEmailToken(email: string, userId: string): string {
   const payload = {
@@ -41,19 +36,17 @@ export function verifyEmailToken(token: string): { email: string; userId: string
 
 export async function storeEmailToken(email: string, token: string): Promise<void> {
   try {
-    // Store token in Supabase for tracking
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('email_confirmations')
       .insert({
         email,
         token,
         created_at: new Date().toISOString(),
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 hours
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
       });
 
     if (error) {
       console.error('Error storing email token:', error);
-      // Don't throw error here, token storage is optional
     }
   } catch (error) {
     console.error('Email token storage error:', error);
@@ -62,7 +55,7 @@ export async function storeEmailToken(email: string, token: string): Promise<voi
 
 export async function markTokenAsUsed(token: string): Promise<void> {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('email_confirmations')
       .update({ used_at: new Date().toISOString() })
       .eq('token', token);

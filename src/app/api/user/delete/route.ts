@@ -1,14 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function DELETE(request: NextRequest) {
   try {
-    const { userId } = await request.json();
+    const { userId, email } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ 
@@ -17,10 +12,21 @@ export async function DELETE(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('Deleting user account:', userId);
+    // Clean up related data before deleting the user
+    // The profiles and job_applications tables have ON DELETE CASCADE,
+    // but email_confirmations doesn't reference auth.users
+    if (email) {
+      try {
+        await supabaseAdmin
+          .from('email_confirmations')
+          .delete()
+          .eq('email', email);
+      } catch (cleanupError) {
+        console.log('Cleanup error (non-critical):', cleanupError);
+      }
+    }
 
-    // Delete user from Supabase Auth
-    const { error } = await supabase.auth.admin.deleteUser(userId);
+    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (error) {
       console.error('Supabase delete error:', error);
@@ -29,18 +35,6 @@ export async function DELETE(request: NextRequest) {
         message: error.message 
       }, { status: 400 });
     }
-
-    // Also clean up any related data in email_confirmations table
-    try {
-      await supabase
-        .from('email_confirmations')
-        .delete()
-        .eq('email', ''); // We'd need to pass email or get it from user data
-    } catch (cleanupError) {
-      console.log('Cleanup error (non-critical):', cleanupError);
-    }
-
-    console.log('User account deleted successfully:', userId);
 
     return NextResponse.json({ 
       success: true, 

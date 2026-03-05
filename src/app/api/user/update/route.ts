@@ -1,10 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { supabaseAdmin } from '@/lib/supabase';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -17,10 +12,7 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 });
     }
 
-    console.log('Updating user profile:', { userId, firstName, lastName });
-
-    // Update user metadata in Supabase
-    const { data, error } = await supabase.auth.admin.updateUserById(
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
       userId,
       {
         user_metadata: {
@@ -39,8 +31,6 @@ export async function PUT(request: NextRequest) {
         message: error.message 
       }, { status: 400 });
     }
-
-    console.log('User profile updated successfully:', data.user?.id);
 
     return NextResponse.json({ 
       success: true, 

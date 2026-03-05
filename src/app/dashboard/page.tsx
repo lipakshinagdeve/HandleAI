@@ -27,6 +27,7 @@ interface User {
 }
 
 interface Application {
+  id?: string;
   url: string;
   status: 'pending' | 'processing' | 'applied' | 'failed';
   title?: string;
@@ -45,12 +46,51 @@ export default function Dashboard() {
   useEffect(() => {
     const userData = localStorage.getItem('user');
     if (userData) {
-      setUser(JSON.parse(userData));
+      const parsed = JSON.parse(userData);
+      setUser(parsed);
+      loadApplications(parsed.id);
     } else {
       router.push('/login');
     }
     setLoading(false);
   }, [router]);
+
+  const loadApplications = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/applications?userId=${userId}`);
+      const data = await res.json();
+      if (data.success && data.applications) {
+        setApplications(data.applications.map((app: { id: string; job_url: string; status: string; position: string; company: string }) => ({
+          id: app.id,
+          url: app.job_url,
+          status: app.status === 'applied' ? 'applied' : app.status === 'rejected' ? 'failed' : 'pending',
+          title: app.position,
+          company: app.company,
+        })));
+      }
+    } catch (err) {
+      console.error('Failed to load applications:', err);
+    }
+  };
+
+  const saveApplication = async (app: { url: string; title: string; company: string; status: string }) => {
+    if (!user) return;
+    try {
+      await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: user.id,
+          company: app.company || 'Unknown Company',
+          position: app.title || 'Unknown Position',
+          jobUrl: app.url,
+          status: app.status === 'applied' ? 'applied' : app.status === 'failed' ? 'rejected' : 'saved',
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to save application:', err);
+    }
+  };
 
   const handleApply = async () => {
     const urls = jobUrls
@@ -99,25 +139,37 @@ export default function Dashboard() {
         });
 
         const data = await response.json();
+        const resultStatus = data.success ? 'applied' : 'failed';
+        const title = data.data?.jobTitle || 'Job Application';
+        const company = data.data?.companyName || 'Unknown Company';
 
         setApplications((prev) =>
           prev.map((app) =>
             app.url === trimmedUrl
-              ? {
-                  ...app,
-                  status: data.success ? 'applied' : 'failed',
-                  title: data.data?.jobTitle,
-                  company: data.data?.companyName,
-                }
+              ? { ...app, status: resultStatus as 'applied' | 'failed', title, company }
               : app
           )
         );
+
+        await saveApplication({
+          url: trimmedUrl,
+          title,
+          company,
+          status: resultStatus,
+        });
       } catch {
         setApplications((prev) =>
           prev.map((app) =>
             app.url === trimmedUrl ? { ...app, status: 'failed' } : app
           )
         );
+
+        await saveApplication({
+          url: trimmedUrl,
+          title: 'Job Application',
+          company: 'Unknown Company',
+          status: 'failed',
+        });
       }
     }
 
@@ -253,9 +305,9 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-2">
-              {applications.map((app, i) => (
+              {applications.slice(0, 10).map((app, i) => (
                 <div
-                  key={i}
+                  key={app.id || i}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-50 border border-zinc-100"
                 >
                   {app.status === 'processing' && (

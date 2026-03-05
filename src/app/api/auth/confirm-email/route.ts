@@ -1,12 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '@/lib/supabase';
 import { verifyEmailToken, markTokenAsUsed } from '@/lib/emailToken';
 import { sendWelcomeEmail } from '@/lib/emailService';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,15 +12,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=invalid-token', request.url));
     }
 
-    // Verify the JWT token
     const tokenData = verifyEmailToken(token);
     
     if (!tokenData) {
       return NextResponse.redirect(new URL('/login?error=invalid-token', request.url));
     }
 
-    // Update user's email_confirm status in Supabase
-    const { data, error } = await supabase.auth.admin.updateUserById(
+    const { data, error } = await supabaseAdmin.auth.admin.updateUserById(
       tokenData.userId,
       { email_confirm: true }
     );
@@ -35,26 +28,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(new URL('/login?error=confirmation-failed', request.url));
     }
 
-    // Mark token as used
     await markTokenAsUsed(token);
 
-    // Send welcome email
     if (data.user?.user_metadata?.first_name) {
       try {
         await sendWelcomeEmail(tokenData.email, data.user.user_metadata.first_name);
       } catch (emailErr) {
         console.error('Welcome email failed:', emailErr);
-        // Don't fail confirmation if welcome email fails
       }
     }
 
-    console.log('Email confirmed successfully for user:', tokenData.userId);
-    
-    // Get user metadata to pass to the success page
     const userMetadata = data.user?.user_metadata || {};
     const firstName = userMetadata.first_name || 'User';
     
-    // Redirect to a confirmation success page with minimal data
     return NextResponse.redirect(new URL(`/confirm-success?email=${encodeURIComponent(tokenData.email)}&userId=${tokenData.userId}&firstName=${encodeURIComponent(firstName)}`, request.url));
 
   } catch (error) {

@@ -15,7 +15,7 @@ export async function sendConfirmationEmail(email: string, token: string) {
     console.log('Confirmation URL:', confirmationUrl);
     
     const { data, error } = await resend.emails.send({
-      from: 'Handle <lipakshi@handlejobs.com>',
+      from: 'Handle <noreply@handlejobs.com>',
       to: [email],
       subject: 'Confirm your Handle account',
       html: `
@@ -93,7 +93,7 @@ export async function sendWelcomeEmail(email: string, firstName: string) {
       : 'http://localhost:3000';
     
     const { data, error } = await resend.emails.send({
-      from: 'Handle <lipakshi@handlejobs.com>',
+      from: 'Handle <noreply@handlejobs.com>',
       to: [email],
       subject: 'Welcome to Handle - Let\'s automate your job search!',
       html: `

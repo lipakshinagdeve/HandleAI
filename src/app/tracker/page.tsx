@@ -10,25 +10,26 @@ import {
   XCircle,
   Clock,
   ListChecks,
+  Loader2,
 } from 'lucide-react';
 
-type Status = 'all' | 'pending' | 'applied' | 'failed';
+type Status = 'all' | 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected';
 
 interface TrackedApplication {
   id: string;
-  url: string;
-  title: string;
+  job_url: string;
+  position: string;
   company: string;
-  status: 'pending' | 'applied' | 'failed';
-  appliedAt: string;
+  status: 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected';
+  applied_at: string;
 }
 
-const statusConfig = {
-  pending: {
+const statusConfig: Record<string, { icon: typeof CheckCircle; label: string; classes: string; dot: string }> = {
+  saved: {
     icon: Clock,
-    label: 'Pending',
-    classes: 'bg-amber-50 text-amber-600',
-    dot: 'bg-amber-400',
+    label: 'Saved',
+    classes: 'bg-zinc-50 text-zinc-600',
+    dot: 'bg-zinc-400',
   },
   applied: {
     icon: CheckCircle,
@@ -36,75 +37,77 @@ const statusConfig = {
     classes: 'bg-emerald-50 text-emerald-600',
     dot: 'bg-emerald-400',
   },
-  failed: {
+  interviewing: {
+    icon: Clock,
+    label: 'Interviewing',
+    classes: 'bg-blue-50 text-blue-600',
+    dot: 'bg-blue-400',
+  },
+  offered: {
+    icon: CheckCircle,
+    label: 'Offered',
+    classes: 'bg-violet-50 text-violet-600',
+    dot: 'bg-violet-400',
+  },
+  rejected: {
     icon: XCircle,
-    label: 'Failed',
+    label: 'Rejected',
     classes: 'bg-red-50 text-red-600',
     dot: 'bg-red-400',
   },
 };
 
-const mockApplications: TrackedApplication[] = [
-  {
-    id: '1',
-    url: 'https://stripe.com/jobs/engineering',
-    title: 'Senior Frontend Engineer',
-    company: 'Stripe',
-    status: 'applied',
-    appliedAt: '2026-03-04',
-  },
-  {
-    id: '2',
-    url: 'https://linear.app/careers',
-    title: 'Product Designer',
-    company: 'Linear',
-    status: 'applied',
-    appliedAt: '2026-03-03',
-  },
-  {
-    id: '3',
-    url: 'https://vercel.com/careers',
-    title: 'Full Stack Developer',
-    company: 'Vercel',
-    status: 'pending',
-    appliedAt: '2026-03-05',
-  },
-  {
-    id: '4',
-    url: 'https://notion.so/careers',
-    title: 'Software Engineer',
-    company: 'Notion',
-    status: 'failed',
-    appliedAt: '2026-03-02',
-  },
-];
-
 export default function Tracker() {
   const router = useRouter();
   const [activeFilter, setActiveFilter] = useState<Status>('all');
   const [search, setSearch] = useState('');
-  const [applications] = useState<TrackedApplication[]>(mockApplications);
+  const [applications, setApplications] = useState<TrackedApplication[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
-    if (!userData) router.push('/login');
+    if (!userData) {
+      router.push('/login');
+      return;
+    }
+
+    const user = JSON.parse(userData);
+    loadApplications(user.id);
   }, [router]);
+
+  const loadApplications = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/applications?userId=${userId}`);
+      const data = await res.json();
+      if (data.success) {
+        setApplications(data.applications || []);
+      }
+    } catch (err) {
+      console.error('Failed to load applications:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const filtered = applications.filter((app) => {
     const matchesFilter =
       activeFilter === 'all' || app.status === activeFilter;
     const matchesSearch =
-      app.title.toLowerCase().includes(search.toLowerCase()) ||
+      app.position.toLowerCase().includes(search.toLowerCase()) ||
       app.company.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
   const counts = {
     all: applications.length,
-    pending: applications.filter((a) => a.status === 'pending').length,
+    saved: applications.filter((a) => a.status === 'saved').length,
     applied: applications.filter((a) => a.status === 'applied').length,
-    failed: applications.filter((a) => a.status === 'failed').length,
+    interviewing: applications.filter((a) => a.status === 'interviewing').length,
+    offered: applications.filter((a) => a.status === 'offered').length,
+    rejected: applications.filter((a) => a.status === 'rejected').length,
   };
+
+  const filterOptions: Status[] = ['all', 'saved', 'applied', 'interviewing', 'offered', 'rejected'];
 
   return (
     <AppShell>
@@ -121,25 +124,25 @@ export default function Tracker() {
 
         {/* Filters + Search */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-          <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl">
-            {(['all', 'pending', 'applied', 'failed'] as Status[]).map(
-              (status) => (
-                <button
-                  key={status}
-                  onClick={() => setActiveFilter(status)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 ${
-                    activeFilter === status
-                      ? 'bg-white text-zinc-900 shadow-soft'
-                      : 'text-zinc-500 hover:text-zinc-700'
-                  }`}
-                >
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+          <div className="flex items-center gap-1 p-1 bg-zinc-100 rounded-xl overflow-x-auto">
+            {filterOptions.map((status) => (
+              <button
+                key={status}
+                onClick={() => setActiveFilter(status)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-all duration-200 whitespace-nowrap ${
+                  activeFilter === status
+                    ? 'bg-white text-zinc-900 shadow-soft'
+                    : 'text-zinc-500 hover:text-zinc-700'
+                }`}
+              >
+                {status.charAt(0).toUpperCase() + status.slice(1)}
+                {counts[status] > 0 && (
                   <span className="ml-1.5 text-zinc-400">
                     {counts[status]}
                   </span>
-                </button>
-              )
-            )}
+                )}
+              </button>
+            ))}
           </div>
 
           <div className="relative w-full sm:w-64">
@@ -154,11 +157,18 @@ export default function Tracker() {
           </div>
         </div>
 
+        {/* Loading state */}
+        {loading && (
+          <div className="flex items-center justify-center py-16">
+            <Loader2 className="w-6 h-6 text-zinc-400 animate-spin" />
+          </div>
+        )}
+
         {/* Applications list */}
-        {filtered.length > 0 ? (
+        {!loading && filtered.length > 0 && (
           <div className="space-y-2">
             {filtered.map((app) => {
-              const config = statusConfig[app.status];
+              const config = statusConfig[app.status] || statusConfig.applied;
               return (
                 <div
                   key={app.id}
@@ -168,7 +178,7 @@ export default function Tracker() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-1">
                         <h3 className="text-sm font-semibold text-zinc-900 truncate">
-                          {app.title}
+                          {app.position}
                         </h3>
                         <span
                           className={`inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full ${config.classes}`}
@@ -181,23 +191,28 @@ export default function Tracker() {
                       </div>
                       <p className="text-sm text-zinc-500">{app.company}</p>
                       <p className="text-xs text-zinc-400 mt-2 font-mono">
-                        {app.appliedAt}
+                        {new Date(app.applied_at).toLocaleDateString()}
                       </p>
                     </div>
-                    <a
-                      href={app.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                    >
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
+                    {app.job_url && (
+                      <a
+                        href={app.job_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
-        ) : (
+        )}
+
+        {/* Empty state */}
+        {!loading && filtered.length === 0 && (
           <div className="bg-white rounded-2xl border border-dashed border-zinc-300 p-12 text-center">
             <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 mx-auto mb-4">
               <ListChecks className="w-5 h-5" />

@@ -58,7 +58,7 @@ export default function Settings() {
       const response = await fetch('/api/user/delete', {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id }),
+        body: JSON.stringify({ userId: user.id, email: user.email }),
       });
 
       const data = await response.json();

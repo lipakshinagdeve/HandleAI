@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     const replyTo = email || undefined;
 
     const { error } = await resend.emails.send({
-      from: 'Handle Feedback <lipakshi@handlejobs.com>',
+      from: 'Handle <noreply@handlejobs.com>',
       to: ['lipakshinagdeve@gmail.com'],
       replyTo,
       subject: `[Handle Feedback] from ${senderInfo}`,
