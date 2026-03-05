@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { Loader2 } from 'lucide-react';
 
 export default function Signup() {
   const router = useRouter();
@@ -11,17 +12,14 @@ export default function Signup() {
     lastName: '',
     email: '',
     password: '',
-    phoneNumber: ''
+    phoneNumber: '',
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,10 +30,8 @@ export default function Signup() {
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
       });
 
       const data = await response.json();
@@ -43,18 +39,17 @@ export default function Signup() {
       if (data.success) {
         setSuccess(true);
         if (data.requiresEmailConfirmation) {
-          setMessage('Account created! Please check your email and click the confirmation link to complete your registration.');
+          setMessage(
+            'Account created! Check your email for a confirmation link.'
+          );
         } else {
           setMessage('Account created successfully!');
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 2000);
+          setTimeout(() => router.push('/dashboard'), 2000);
         }
       } else {
         setMessage(data.message || 'Registration failed');
       }
-    } catch (error) {
-      console.error('Registration error:', error);
+    } catch {
       setMessage('Failed to create account. Please try again.');
     } finally {
       setLoading(false);
@@ -62,50 +57,49 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
-      {/* Header */}
-      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold" style={{ color: '#ffa3d1' }}>
-                Handle
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/login" 
-                className="px-3 py-2 rounded-md text-sm font-medium hover:opacity-80"
-                style={{ color: '#6c757d' }}
-              >
-                Login
-              </Link>
-            </div>
-          </div>
-        </nav>
+    <div className="min-h-screen bg-[#fafafa] flex flex-col">
+      {/* Minimal header */}
+      <header className="px-6 py-4">
+        <Link
+          href="/"
+          className="text-lg font-semibold text-zinc-900 tracking-tight"
+        >
+          Handle
+        </Link>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-md mx-auto pt-20 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-          <div className="mb-6 text-center">
-            <h2 className="text-3xl font-extrabold text-gray-900">Create Your Profile</h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Join Handle and automate your job search
+      {/* Form */}
+      <div className="flex-1 flex items-center justify-center px-6 pb-16">
+        <div className="w-full max-w-sm animate-fade-in">
+          <div className="mb-8">
+            <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+              Create your account
+            </h1>
+            <p className="mt-2 text-sm text-zinc-500">
+              Start automating your job applications.
             </p>
           </div>
 
           {message && (
-            <div className={`mb-4 p-4 rounded-md ${success ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            <div
+              className={`mb-6 px-4 py-3 rounded-xl text-sm ${
+                success
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : 'bg-red-50 text-red-600 border border-red-200'
+              }`}
+            >
               {message}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                  First Name
+                <label
+                  htmlFor="firstName"
+                  className="block text-sm font-medium text-zinc-700 mb-1.5"
+                >
+                  First name
                 </label>
                 <input
                   type="text"
@@ -114,12 +108,15 @@ export default function Signup() {
                   required
                   value={formData.firstName}
                   onChange={handleChange}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm px-3 py-2 border"
+                  className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus-ring"
                 />
               </div>
               <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                  Last Name
+                <label
+                  htmlFor="lastName"
+                  className="block text-sm font-medium text-zinc-700 mb-1.5"
+                >
+                  Last name
                 </label>
                 <input
                   type="text"
@@ -128,13 +125,16 @@ export default function Signup() {
                   required
                   value={formData.lastName}
                   onChange={handleChange}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm px-3 py-2 border"
+                  className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus-ring"
                 />
               </div>
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-zinc-700 mb-1.5"
+              >
                 Email
               </label>
               <input
@@ -144,12 +144,16 @@ export default function Signup() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm px-3 py-2 border"
+                className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus-ring"
+                placeholder="you@example.com"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-zinc-700 mb-1.5"
+              >
                 Password
               </label>
               <input
@@ -159,13 +163,18 @@ export default function Signup() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm px-3 py-2 border"
+                className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus-ring"
+                placeholder="Create a password"
               />
             </div>
 
             <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                Phone Number
+              <label
+                htmlFor="phoneNumber"
+                className="block text-sm font-medium text-zinc-700 mb-1.5"
+              >
+                Phone
+                <span className="text-zinc-400 font-normal"> (optional)</span>
               </label>
               <input
                 type="tel"
@@ -173,33 +182,38 @@ export default function Signup() {
                 id="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500 sm:text-sm px-3 py-2 border"
+                className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus-ring"
+                placeholder="+1 (555) 000-0000"
               />
             </div>
 
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
-              >
-                {loading ? 'Creating Account...' : 'Create Account'}
-              </button>
-            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                'Create account'
+              )}
+            </button>
           </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              Already have an account?{' '}
-              <Link href="/login" className="font-medium hover:opacity-80" style={{ color: '#ffa3d1' }}>
-                Sign in
-              </Link>
-            </p>
-          </div>
+          <p className="mt-6 text-center text-sm text-zinc-500">
+            Already have an account?{' '}
+            <Link
+              href="/login"
+              className="font-medium text-accent hover:text-accent-hover transition-colors"
+            >
+              Sign in
+            </Link>
+          </p>
         </div>
-      </main>
+      </div>
     </div>
   );
 }

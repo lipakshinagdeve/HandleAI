@@ -3,8 +3,19 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import AppShell from '@/components/AppShell';
+import {
+  User,
+  FileText,
+  LogOut,
+  Trash2,
+  AlertTriangle,
+  Loader2,
+  ChevronRight,
+  Shield,
+} from 'lucide-react';
 
-interface User {
+interface UserData {
   id: string;
   email: string;
   user_metadata: {
@@ -17,33 +28,17 @@ interface User {
 
 export default function Settings() {
   const router = useRouter();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState('');
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [deleting, setDeleting] = useState(false);
-
-  const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    phoneNumber: '',
-    backgroundInfo: ''
-  });
+  const [message, setMessage] = useState('');
 
   useEffect(() => {
-    // Check if user is logged in
     const userData = localStorage.getItem('user');
     if (userData) {
-      const parsedUser = JSON.parse(userData);
-      setUser(parsedUser);
-      setFormData({
-        firstName: parsedUser.user_metadata?.first_name || '',
-        lastName: parsedUser.user_metadata?.last_name || '',
-        phoneNumber: parsedUser.user_metadata?.phone_number || '',
-        backgroundInfo: parsedUser.user_metadata?.background_info || ''
-      });
+      setUser(JSON.parse(userData));
     } else {
       router.push('/login');
     }
@@ -55,77 +50,15 @@ export default function Settings() {
     router.push('/');
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSave = async () => {
-    if (!user) return;
-    
-    setSaving(true);
-    setMessage('');
-
-    try {
-      const response = await fetch('/api/user/update', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber,
-          backgroundInfo: formData.backgroundInfo
-        })
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        // Update localStorage with new data
-        const updatedUser = {
-          ...user,
-          user_metadata: {
-            ...user.user_metadata,
-            first_name: formData.firstName,
-            last_name: formData.lastName,
-            phone_number: formData.phoneNumber,
-            background_info: formData.backgroundInfo
-          }
-        };
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        setUser(updatedUser);
-        setMessage('Profile updated successfully!');
-      } else {
-        setMessage(data.message || 'Failed to update profile');
-      }
-    } catch (error) {
-      console.error('Update error:', error);
-      setMessage('Failed to update profile. Please try again.');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleDeleteAccount = async () => {
     if (!user || deleteConfirmation !== 'DELETE') return;
-    
     setDeleting(true);
 
     try {
       const response = await fetch('/api/user/delete', {
         method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: user.id
-        })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id }),
       });
 
       const data = await response.json();
@@ -137,253 +70,214 @@ export default function Settings() {
         setMessage(data.message || 'Failed to delete account');
         setDeleting(false);
       }
-    } catch (error) {
-      console.error('Delete error:', error);
+    } catch {
       setMessage('Failed to delete account. Please try again.');
       setDeleting(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: '#ffa3d1' }}></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return null; // Will redirect to login
-  }
+  if (loading || !user) return null;
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
-      {/* Header */}
-      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
-        <nav className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold" style={{ color: '#ffa3d1' }}>
-                Handle
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/dashboard"
-                className="text-gray-600 hover:opacity-80 py-2 rounded-md text-sm font-medium"
-              >
-                Dashboard
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </nav>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8">
+    <AppShell>
+      <div className="animate-fade-in">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
-          <p className="mt-2 text-gray-600">
-            Manage your account settings and preferences.
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            Settings
+          </h1>
+          <p className="mt-1 text-zinc-500 text-sm">
+            Manage your account and preferences.
           </p>
         </div>
 
         {message && (
-          <div className={`mb-6 p-4 rounded-md ${message.includes('success') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+          <div className="mb-6 px-4 py-3 rounded-xl text-sm bg-red-50 text-red-600 border border-red-200">
             {message}
           </div>
         )}
 
-        {/* Profile Settings */}
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">Profile Information</h2>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
-                First Name
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-400"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-400"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                value={user.email}
-                disabled
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-50 text-gray-500"
-              />
-              <p className="mt-1 text-xs text-gray-500">Email cannot be changed</p>
-            </div>
-
-            <div>
-              <label htmlFor="phoneNumber" className="block text-sm font-medium text-gray-700">
-                Phone Number
-              </label>
-              <input
-                type="tel"
-                id="phoneNumber"
-                name="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-pink-400"
-                placeholder="Optional"
-              />
-            </div>
+        {/* Account section */}
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-soft overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-zinc-100">
+            <h2 className="text-sm font-semibold text-zinc-900">Account</h2>
           </div>
 
-          <div className="mt-6">
+          <div className="divide-y divide-zinc-100">
+            {/* Profile info */}
+            <div className="px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-zinc-900">
+                    {user.user_metadata?.first_name || 'User'}{' '}
+                    {user.user_metadata?.last_name || ''}
+                  </p>
+                  <p className="text-xs text-zinc-500">{user.email}</p>
+                </div>
+              </div>
+              <Link
+                href="/profile"
+                className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors"
+              >
+                Edit
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Resume */}
+            <div className="px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-zinc-900">Resume</p>
+                  <p className="text-xs text-zinc-500">
+                    Upload or update your resume
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/profile"
+                className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors"
+              >
+                Manage
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+
+            {/* Background info status */}
+            <div className="px-6 py-4 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-zinc-100 text-zinc-500">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-zinc-900">
+                    AI Background
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {user.user_metadata?.background_info
+                      ? 'Background info set'
+                      : 'Not configured yet'}
+                  </p>
+                </div>
+              </div>
+              <Link
+                href="/profile"
+                className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors"
+              >
+                {user.user_metadata?.background_info ? 'Update' : 'Set up'}
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Session */}
+        <div className="bg-white rounded-2xl border border-zinc-200 shadow-soft overflow-hidden mb-6">
+          <div className="px-6 py-4 border-b border-zinc-100">
+            <h2 className="text-sm font-semibold text-zinc-900">Session</h2>
+          </div>
+
+          <div className="px-6 py-4">
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className="text-white px-6 py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
+              onClick={handleLogout}
+              className="inline-flex items-center gap-2 text-sm font-medium text-zinc-600 hover:text-zinc-900 transition-colors"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              <LogOut className="w-4 h-4" />
+              Log out of this device
             </button>
           </div>
         </div>
 
-        {/* Background Information */}
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Background Information</h2>
-          <p className="text-gray-600 mb-6">
-            Provide detailed information about yourself. The AI will use this to personalize your job applications.
-          </p>
-          
-          <div>
-            <label htmlFor="backgroundInfo" className="block text-sm font-medium text-gray-700 mb-2">
-              Your Information & Background
-            </label>
-            <textarea
-              id="backgroundInfo"
-              name="backgroundInfo"
-              rows={10}
-              value={formData.backgroundInfo}
-              onChange={handleChange}
-              placeholder="Tell us about yourself, your skills, experience, education, achievements, and any other relevant information. The AI will use this to personalize your job applications.
+        {/* Danger zone */}
+        <div className="bg-white rounded-2xl border border-red-200 shadow-soft overflow-hidden">
+          <div className="px-6 py-4 border-b border-red-100 bg-red-50/50">
+            <h2 className="text-sm font-semibold text-red-600">
+              Danger Zone
+            </h2>
+          </div>
 
-Example:
-- 5 years of software development experience
-- Proficient in React, Node.js, Python, TypeScript
-- Bachelor's in Computer Science from XYZ University
-- Led a team of 3 developers at ABC Company
-- Built scalable web applications serving 100k+ users
-- Experience with AWS, Docker, microservices architecture
-- Passionate about clean code and user experience
-- Strong problem-solving and communication skills
-- Previous internship at Tech Startup Inc.
-- Contributed to open-source projects on GitHub"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
-            />
-            <p className="mt-2 text-sm text-gray-500">
-              This information will be used by our AI to create personalized responses for job applications. Be as detailed as possible.
+          <div className="px-6 py-5">
+            <p className="text-sm text-zinc-600 mb-4">
+              Once you delete your account, there is no going back. All your
+              data will be permanently removed.
             </p>
-          </div>
-
-          <div className="mt-6">
             <button
-              onClick={handleSave}
-              disabled={saving}
-              className="text-white px-6 py-2 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
-              style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
+              onClick={() => setShowDeleteDialog(true)}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 text-sm font-medium rounded-xl hover:bg-red-100 transition-colors"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              <Trash2 className="w-4 h-4" />
+              Delete account
             </button>
           </div>
         </div>
-
-        {/* Danger Zone */}
-        <div className="bg-white shadow rounded-lg p-6 border-l-4 border-red-500">
-          <h2 className="text-xl font-semibold text-red-600 mb-4">Danger Zone</h2>
-          <p className="text-gray-600 mb-4">
-            Once you delete your account, there is no going back. Please be certain.
-          </p>
-          
-          <button
-            onClick={() => setShowDeleteDialog(true)}
-            className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-          >
-            Delete Account
-          </button>
-        </div>
-      </main>
+      </div>
 
       {/* Delete Confirmation Dialog */}
       {showDeleteDialog && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-red-600 mb-4">Delete Account</h3>
-            <p className="text-gray-600 mb-4">
-              This action cannot be undone. This will permanently delete your account and remove all your data.
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-elevated animate-fade-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-50 text-red-500">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <h3 className="text-lg font-semibold text-zinc-900">
+                Delete Account
+              </h3>
+            </div>
+
+            <p className="text-sm text-zinc-600 mb-4">
+              This action cannot be undone. This will permanently delete your
+              account and remove all your data.
             </p>
-            <p className="text-gray-600 mb-4">
-              Please type <strong>DELETE</strong> to confirm:
+
+            <p className="text-sm text-zinc-600 mb-3">
+              Type <span className="font-mono font-semibold">DELETE</span> to
+              confirm:
             </p>
+
             <input
               type="text"
               value={deleteConfirmation}
               onChange={(e) => setDeleteConfirmation(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md mb-4"
+              className="w-full px-4 py-2.5 bg-white border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus-ring mb-5"
               placeholder="Type DELETE to confirm"
             />
-            <div className="flex space-x-3">
+
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteDialog(false);
                   setDeleteConfirmation('');
                 }}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
                 disabled={deleting}
+                className="flex-1 px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 text-sm font-medium rounded-xl hover:bg-zinc-50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteAccount}
                 disabled={deleteConfirmation !== 'DELETE' || deleting}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-red-600 text-white text-sm font-medium rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {deleting ? 'Deleting...' : 'Delete Account'}
+                {deleting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Account'
+                )}
               </button>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   );
 }

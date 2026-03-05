@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { CheckCircle } from 'lucide-react';
 
 function ConfirmSuccessContent() {
   const router = useRouter();
@@ -16,27 +17,21 @@ function ConfirmSuccessContent() {
     const firstName = searchParams.get('firstName');
 
     if (email && userId) {
-      // Store complete user data with the firstName from the backend
       const userData = {
         id: userId,
         email: email,
         user_metadata: {
           first_name: firstName || 'User',
           last_name: '',
-          phone_number: ''
-        }
+          phone_number: '',
+        },
       };
 
       localStorage.setItem('user', JSON.stringify(userData));
-      
-      setMessage('Email confirmed successfully! Redirecting to dashboard...');
-      
-      // Clean URL by replacing current history entry (remove query params)
+      setMessage('Email confirmed! Redirecting to dashboard...');
       window.history.replaceState({}, '', '/confirm-success');
-      
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+
+      setTimeout(() => router.push('/dashboard'), 1500);
     } else {
       setMessage('Invalid confirmation link.');
       setLoading(false);
@@ -44,72 +39,64 @@ function ConfirmSuccessContent() {
   }, [searchParams, router]);
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
-      {/* Header */}
-      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
-        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold" style={{ color: '#ffa3d1' }}>
-                Handle
-              </Link>
-            </div>
-          </div>
-        </nav>
+    <div className="min-h-screen bg-[#fafafa] flex flex-col">
+      <header className="px-6 py-4">
+        <Link
+          href="/"
+          className="text-lg font-semibold text-zinc-900 tracking-tight"
+        >
+          Handle
+        </Link>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-md mx-auto pt-20 pb-12 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white py-8 px-6 shadow rounded-lg sm:px-10">
-          <div className="text-center">
-            <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full mb-4" style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}>
-              <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-extrabold text-gray-900 mb-4">Email Confirmed!</h2>
-            <p className="text-gray-600 mb-6">{message}</p>
-            
-            {loading && (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: '#ffa3d1' }}></div>
-              </div>
-            )}
-            
-            {!loading && (
-              <div className="space-y-4">
-                <Link 
-                  href="/dashboard"
-                  className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
-                >
-                  Go to Dashboard
-                </Link>
-                <Link 
-                  href="/login"
-                  className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Sign In
-                </Link>
-              </div>
-            )}
+      <div className="flex-1 flex items-center justify-center px-6 pb-16">
+        <div className="w-full max-w-sm text-center animate-fade-in">
+          <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-50 text-emerald-500 mx-auto mb-6">
+            <CheckCircle className="w-7 h-7" />
           </div>
+
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 mb-2">
+            Email Confirmed
+          </h1>
+          <p className="text-sm text-zinc-500 mb-8">{message}</p>
+
+          {loading && (
+            <div className="flex justify-center">
+              <div className="w-5 h-5 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
+            </div>
+          )}
+
+          {!loading && (
+            <div className="space-y-3">
+              <Link
+                href="/dashboard"
+                className="block w-full px-4 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-800 transition-colors text-center"
+              >
+                Go to Dashboard
+              </Link>
+              <Link
+                href="/login"
+                className="block w-full px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 text-sm font-medium rounded-xl hover:bg-zinc-50 transition-colors text-center"
+              >
+                Sign in
+              </Link>
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   );
 }
 
 export default function ConfirmSuccess() {
   return (
-    <Suspense fallback={
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: '#ffa3d1' }}></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
+          <div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
         </div>
-      </div>
-    }>
+      }
+    >
       <ConfirmSuccessContent />
     </Suspense>
   );

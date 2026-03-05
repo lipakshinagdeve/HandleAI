@@ -3,6 +3,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import AppShell from '@/components/AppShell';
+import {
+  Send,
+  Loader2,
+  Link as LinkIcon,
+  CheckCircle,
+  AlertCircle,
+  XCircle,
+  Plus,
+  ArrowRight,
+} from 'lucide-react';
 
 interface User {
   id: string;
@@ -15,17 +26,23 @@ interface User {
   };
 }
 
+interface Application {
+  url: string;
+  status: 'pending' | 'processing' | 'applied' | 'failed';
+  title?: string;
+  company?: string;
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [jobUrl, setJobUrl] = useState('');
+  const [jobUrls, setJobUrls] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState('');
-  const [applicationsCount, setApplicationsCount] = useState(0);
+  const [applications, setApplications] = useState<Application[]>([]);
 
   useEffect(() => {
-    // Check if user is logged in
     const userData = localStorage.getItem('user');
     if (userData) {
       setUser(JSON.parse(userData));
@@ -35,14 +52,14 @@ export default function Dashboard() {
     setLoading(false);
   }, [router]);
 
-  const handleLogout = () => {
-    localStorage.removeItem('user');
-    router.push('/');
-  };
+  const handleApply = async () => {
+    const urls = jobUrls
+      .trim()
+      .split('\n')
+      .filter((url) => url.trim());
 
-  const handleJobApplication = async () => {
-    if (!jobUrl.trim()) {
-      setMessage('Please enter a job application URL');
+    if (urls.length === 0) {
+      setMessage('Please enter at least one job URL');
       return;
     }
 
@@ -51,185 +68,249 @@ export default function Dashboard() {
       return;
     }
 
-    // Check if user has background info
     if (!user.user_metadata?.background_info) {
-      setMessage('Please complete your background information in Settings first');
+      setMessage('Please complete your profile information first');
       return;
     }
 
     setIsProcessing(true);
     setMessage('');
 
-    try {
-      const userBackground = {
-        firstName: user.user_metadata?.first_name || '',
-        lastName: user.user_metadata?.last_name || '',
-        email: user.email,
-        phoneNumber: user.user_metadata?.phone_number || '',
-        backgroundInfo: user.user_metadata?.background_info || ''
-      };
+    for (const url of urls) {
+      const trimmedUrl = url.trim();
+      setApplications((prev) => [
+        ...prev,
+        { url: trimmedUrl, status: 'processing' },
+      ]);
 
-      const response = await fetch('/api/jobs/apply', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          jobUrl: jobUrl.trim(),
-          userBackground
-        })
-      });
+      try {
+        const userBackground = {
+          firstName: user.user_metadata?.first_name || '',
+          lastName: user.user_metadata?.last_name || '',
+          email: user.email,
+          phoneNumber: user.user_metadata?.phone_number || '',
+          backgroundInfo: user.user_metadata?.background_info || '',
+        };
 
-      const data = await response.json();
+        const response = await fetch('/api/jobs/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobUrl: trimmedUrl, userBackground }),
+        });
 
-      if (data.success) {
-        setMessage(`✅ Success! Browser automation started for ${data.data.jobTitle} at ${data.data.companyName}. Check the new browser window to see the form being filled automatically!`);
-        setApplicationsCount(prev => prev + 1);
-        setJobUrl(''); // Clear the input
-      } else {
-        setMessage(`❌ Error: ${data.message}`);
+        const data = await response.json();
+
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.url === trimmedUrl
+              ? {
+                  ...app,
+                  status: data.success ? 'applied' : 'failed',
+                  title: data.data?.jobTitle,
+                  company: data.data?.companyName,
+                }
+              : app
+          )
+        );
+      } catch {
+        setApplications((prev) =>
+          prev.map((app) =>
+            app.url === trimmedUrl ? { ...app, status: 'failed' } : app
+          )
+        );
       }
-    } catch (error) {
-      console.error('Job application error:', error);
-      setMessage('❌ Failed to process job application. Please try again.');
-    } finally {
-      setIsProcessing(false);
     }
+
+    setIsProcessing(false);
+    setJobUrls('');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2" style={{ borderColor: '#ffa3d1' }}></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading || !user) return null;
 
-  if (!user) {
-    return null; // Will redirect to login
-  }
+  const appliedCount = applications.filter(
+    (a) => a.status === 'applied'
+  ).length;
+  const processingCount = applications.filter(
+    (a) => a.status === 'processing'
+  ).length;
+  const failedCount = applications.filter((a) => a.status === 'failed').length;
 
   return (
-    <div className="min-h-screen" style={{ background: 'linear-gradient(135deg, #ffb6c1 0%, #ffffff 100%)' }}>
-      {/* Header */}
-      <header className="bg-white shadow-sm fixed top-0 left-0 right-0 z-50">
-        <nav className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <Link href="/" className="text-2xl font-bold" style={{ color: '#ffa3d1' }}>
-                Handle
-              </Link>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/settings"
-                className="text-gray-600 hover:opacity-80 py-2 rounded-md text-sm font-medium"
-              >
-                Settings
-              </Link>
-              <button
-                onClick={handleLogout}
-                className="text-white px-4 py-2 rounded-md text-sm font-medium hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </nav>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto pt-28 pb-12 px-4 sm:px-6 lg:px-8">
+    <AppShell>
+      <div className="animate-fade-in">
+        {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Welcome to your Dashboard, {user.user_metadata?.first_name || 'User'}!
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900">
+            Welcome back
+            {user.user_metadata?.first_name
+              ? `, ${user.user_metadata.first_name}`
+              : ''}
           </h1>
-          <p className="mt-2 text-gray-600">
-            Manage your job search and track your applications.
+          <p className="mt-1 text-zinc-500 text-sm">
+            Paste job links and let AI handle the applications.
           </p>
         </div>
 
-        {/* AI Job Application Tool */}
-        <div className="bg-white shadow rounded-lg p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">AI Job Application Assistant</h2>
-          <p className="text-gray-600 mb-6">
-            Paste any job application link below. Our AI will use visual understanding to intelligently identify and fill form fields, regardless of the website&apos;s HTML structure. The AI can see the page like a human and understand what each field is asking for based on labels, context, and visual cues!
-          </p>
-          
-          <div className="space-y-6">
-            {/* Job Link Input */}
-            <div>
-              <label htmlFor="jobLink" className="block text-sm font-medium text-gray-700 mb-2">
-                Job Application Link
-              </label>
-              <input
-                type="url"
-                id="jobLink"
-                value={jobUrl}
-                onChange={(e) => setJobUrl(e.target.value)}
-                placeholder="https://company.com/careers/job-application"
-                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-pink-400 focus:border-pink-400"
-                disabled={isProcessing}
-              />
-            </div>
-
-
-            {/* Action Button */}
-            <div>
-              <button
-                onClick={handleJobApplication}
-                disabled={isProcessing || !jobUrl.trim()}
-                className="w-full text-white px-6 py-3 rounded-md text-sm font-medium hover:opacity-90 disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #ffa3d1 0%, #eeaace 100%)' }}
-              >
-                {isProcessing ? '🔄 Starting Browser Automation...' : '🤖 Auto-Fill Job Application'}
-              </button>
-              <p className="text-xs text-gray-500 mt-2 text-center">
-                Make sure to complete your profile information in <Link href="/settings" className="text-pink-500 hover:underline">Settings</Link> first
+        {/* Quick stats */}
+        {applications.length > 0 && (
+          <div className="grid grid-cols-3 gap-4 mb-8">
+            <div className="bg-white rounded-2xl border border-zinc-200 p-4">
+              <p className="text-2xl font-semibold text-zinc-900">
+                {appliedCount}
               </p>
+              <p className="text-xs text-zinc-500 mt-1">Applied</p>
             </div>
+            <div className="bg-white rounded-2xl border border-zinc-200 p-4">
+              <p className="text-2xl font-semibold text-zinc-900">
+                {processingCount}
+              </p>
+              <p className="text-xs text-zinc-500 mt-1">Processing</p>
+            </div>
+            <div className="bg-white rounded-2xl border border-zinc-200 p-4">
+              <p className="text-2xl font-semibold text-zinc-900">
+                {failedCount}
+              </p>
+              <p className="text-xs text-zinc-500 mt-1">Failed</p>
+            </div>
+          </div>
+        )}
 
-            {/* Status Message */}
-            {message && (
-              <div className={`p-4 rounded-md ${message.includes('✅') ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+        {/* Job Links Input */}
+        <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-soft mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent-light text-accent">
+              <LinkIcon className="w-4 h-4" />
+            </div>
+            <h2 className="font-semibold text-zinc-900">Apply to Jobs</h2>
+          </div>
+
+          <textarea
+            value={jobUrls}
+            onChange={(e) => setJobUrls(e.target.value)}
+            placeholder={`Paste job application URLs here, one per line...\nhttps://company.com/careers/job-1\nhttps://another.com/apply/role-2`}
+            rows={5}
+            className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl text-sm text-zinc-900 placeholder:text-zinc-400 focus-ring resize-none font-mono"
+            disabled={isProcessing}
+          />
+
+          {message && (
+            <div className="mt-3 flex items-start gap-2 text-sm text-amber-600">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <span>
                 {message}
-              </div>
-            )}
+                {message.includes('profile') && (
+                  <>
+                    {' '}
+                    <Link
+                      href="/profile"
+                      className="underline text-accent hover:text-accent-hover"
+                    >
+                      Go to Profile
+                    </Link>
+                  </>
+                )}
+              </span>
+            </div>
+          )}
+
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-xs text-zinc-400">
+              One URL per line. AI processes each sequentially.
+            </p>
+            <button
+              onClick={handleApply}
+              disabled={isProcessing || !jobUrls.trim()}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4" />
+                  Apply
+                </>
+              )}
+            </button>
           </div>
         </div>
 
-
-
-        {/* Recent Applications */}
-        <div className="bg-white shadow rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center space-x-3">
-              <h2 className="text-xl font-semibold text-gray-900">Applications Submitted</h2>
-              <span className="text-lg font-medium text-gray-600">({applicationsCount})</span>
+        {/* Application Progress */}
+        {applications.length > 0 && (
+          <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-soft">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-semibold text-zinc-900">
+                Application Progress
+              </h2>
+              <Link
+                href="/tracker"
+                className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors"
+              >
+                View all
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
             </div>
-            <button className="text-sm text-gray-500 hover:text-gray-700">View All</button>
-          </div>
-          
-          <div className="overflow-hidden">
-            <div className="text-center py-12">
-              <div className="mx-auto h-12 w-12 text-gray-400">
-                <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <h3 className="mt-2 text-sm font-medium text-gray-900">No applications yet</h3>
-              <p className="mt-1 text-sm text-gray-500">
-                Start by pasting a job application link above to get started with AI-powered applications.
-              </p>
+            <div className="space-y-2">
+              {applications.map((app, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-50 border border-zinc-100"
+                >
+                  {app.status === 'processing' && (
+                    <Loader2 className="w-4 h-4 text-accent animate-spin flex-shrink-0" />
+                  )}
+                  {app.status === 'applied' && (
+                    <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                  )}
+                  {app.status === 'failed' && (
+                    <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+                  )}
+                  {app.status === 'pending' && (
+                    <div className="w-4 h-4 rounded-full border-2 border-zinc-300 flex-shrink-0" />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-zinc-900 truncate">
+                      {app.title
+                        ? `${app.title} at ${app.company}`
+                        : app.url}
+                    </p>
+                  </div>
+                  <span
+                    className={`text-xs font-medium px-2.5 py-1 rounded-full ${
+                      app.status === 'applied'
+                        ? 'bg-emerald-50 text-emerald-600'
+                        : app.status === 'failed'
+                          ? 'bg-red-50 text-red-600'
+                          : app.status === 'processing'
+                            ? 'bg-indigo-50 text-indigo-600'
+                            : 'bg-zinc-100 text-zinc-500'
+                    }`}
+                  >
+                    {app.status}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
-        </div>
-      </main>
-    </div>
+        )}
+
+        {/* Empty state */}
+        {applications.length === 0 && (
+          <div className="bg-white rounded-2xl border border-dashed border-zinc-300 p-12 text-center">
+            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-zinc-100 text-zinc-400 mx-auto mb-4">
+              <Plus className="w-5 h-5" />
+            </div>
+            <h3 className="text-sm font-medium text-zinc-900">
+              No applications yet
+            </h3>
+            <p className="mt-1 text-sm text-zinc-500">
+              Paste job URLs above to get started.
+            </p>
+          </div>
+        )}
+      </div>
+    </AppShell>
   );
 }
-
