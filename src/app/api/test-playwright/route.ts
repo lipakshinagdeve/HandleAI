@@ -1,33 +1,39 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { chromium } from 'playwright';
+import chromiumPkg from '@sparticuz/chromium';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
-    // Test if we can import Playwright
-    const { chromium } = await import('playwright');
-    
     console.log('✅ Playwright imported successfully');
-    
-    // Test if we can launch a browser
+
+    const isCloud = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.RENDER;
+
     let browser;
     try {
-      browser = await chromium.launch({ headless: true });
+      if (isCloud) {
+        browser = await chromium.launch({
+          executablePath: await chromiumPkg.executablePath(),
+          args: [...chromiumPkg.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+          headless: true
+        });
+      } else {
+        browser = await chromium.launch({ headless: true });
+      }
+
       console.log('✅ Browser launched successfully');
-      
+
       const page = await browser.newPage();
       await page.goto('https://example.com');
       const title = await page.title();
-      
+
       await browser.close();
-      
+
       return NextResponse.json({
         success: true,
         message: 'Playwright is working correctly',
-        data: {
-          title,
-          playwrightVersion: '1.55.1'
-        }
+        data: { title, environment: isCloud ? 'cloud' : 'local' }
       });
-      
+
     } catch (browserError) {
       console.error('❌ Browser launch failed:', browserError);
       return NextResponse.json({
@@ -36,7 +42,7 @@ export async function GET(request: NextRequest) {
         error: browserError instanceof Error ? browserError.message : 'Unknown browser error'
       }, { status: 500 });
     }
-    
+
   } catch (importError) {
     console.error('❌ Playwright import failed:', importError);
     return NextResponse.json({

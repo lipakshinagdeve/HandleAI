@@ -8,7 +8,7 @@ export class JobApplicationAutomator {
 
   async initialize() {
     try {
-      const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+      const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.RENDER;
       
       if (isServerless) {
         // Use lightweight Chromium for serverless environments
