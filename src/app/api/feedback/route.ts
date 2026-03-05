@@ -3,6 +3,9 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Use Resend's pre-verified sender until handlejobs.com is verified
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Handle <onboarding@resend.dev>';
+
 export async function POST(request: NextRequest) {
   try {
     const { message, email, name } = await request.json();
@@ -18,7 +21,7 @@ export async function POST(request: NextRequest) {
     const replyTo = email || undefined;
 
     const { error } = await resend.emails.send({
-      from: 'Handle <noreply@handlejobs.com>',
+      from: FROM_EMAIL,
       to: ['lipakshinagdeve@gmail.com'],
       replyTo,
       subject: `[Handle Feedback] from ${senderInfo}`,

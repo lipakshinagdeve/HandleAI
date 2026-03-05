@@ -2,6 +2,9 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+// Use Resend's pre-verified sender until handlejobs.com is verified in Resend dashboard
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Handle <onboarding@resend.dev>';
+
 export async function sendConfirmationEmail(email: string, token: string) {
   try {
     // Use custom domain in production, localhost for development
@@ -15,7 +18,7 @@ export async function sendConfirmationEmail(email: string, token: string) {
     console.log('Confirmation URL:', confirmationUrl);
     
     const { data, error } = await resend.emails.send({
-      from: 'Handle <noreply@handlejobs.com>',
+      from: FROM_EMAIL,
       to: [email],
       subject: 'Confirm your Handle account',
       html: `
@@ -93,7 +96,7 @@ export async function sendWelcomeEmail(email: string, firstName: string) {
       : 'http://localhost:3000';
     
     const { data, error } = await resend.emails.send({
-      from: 'Handle <noreply@handlejobs.com>',
+      from: FROM_EMAIL,
       to: [email],
       subject: 'Welcome to Handle - Let\'s automate your job search!',
       html: `

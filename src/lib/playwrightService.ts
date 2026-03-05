@@ -404,6 +404,31 @@ export class JobApplicationAutomator {
     }
   }
 
+  /** Best-effort: try to find and click a submit/apply button. Returns true if clicked. */
+  async tryClickSubmit(): Promise<boolean> {
+    if (!this.page) return false;
+    try {
+      // Try type=submit first
+      const submitInput = await this.page.$('input[type="submit"], button[type="submit"]');
+      if (submitInput && await submitInput.isVisible()) {
+        await submitInput.click();
+        return true;
+      }
+      // Try buttons with Submit/Apply text
+      const buttons = await this.page.$$('button, input[type="button"]');
+      for (const btn of buttons) {
+        const text = (await btn.textContent())?.toLowerCase() || '';
+        if (/submit|apply|send|continue/.test(text) && (await btn.isVisible())) {
+          await btn.click();
+          return true;
+        }
+      }
+    } catch {
+      // Ignore - form may have custom submit
+    }
+    return false;
+  }
+
   async close(): Promise<void> {
     // Don't close the browser - let it stay open for user review
     console.log('🎉 Automation completed! Browser will stay open for you to review and submit the application.');

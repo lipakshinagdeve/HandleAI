@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { spawn } from 'child_process';
-import path from 'path';
+import { JobApplicationAutomator } from '@/lib/playwrightService';
+import { generatePersonalizedResponses } from '@/lib/groqService';
+import type { UserBackground } from '@/lib/groqService';
+
+export const maxDuration = 120; // Allow up to 2 minutes for browser automation (Render, Vercel Pro)
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const automator = new JobApplicationAutomator();
+
   try {
     const { jobUrl, userBackground } = await request.json();
 
@@ -13,97 +18,80 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }, { status: 400 });
     }
 
-    console.log('🚀 Starting Selenium automation...');
+    console.log('🚀 Starting Playwright automation...');
     console.log('📝 Job URL:', jobUrl);
     console.log('👤 User:', userBackground.firstName, userBackground.lastName);
 
-    // Prepare user data for Python script
-    const userData = {
+    // Map to UserBackground type expected by groqService
+    const userBg: UserBackground = {
       firstName: userBackground.firstName || '',
       lastName: userBackground.lastName || '',
       email: userBackground.email || '',
-      phone: userBackground.phone || '',
+      phoneNumber: userBackground.phoneNumber || userBackground.phone || '',
       backgroundInfo: userBackground.backgroundInfo || 'I am a motivated professional looking for new opportunities.'
     };
 
-    // Path to the Selenium Python script
-    const scriptPath = path.join(process.cwd(), 'selenium_automation.py');
-    
-    return new Promise<NextResponse>((resolve) => {
-      // Spawn Python process with Selenium
-      const pythonProcess = spawn('python3', [
-        scriptPath,
-        jobUrl,
-        JSON.stringify(userData)
-      ], {
-        env: {
-          ...process.env,
-          GROQ_API_KEY: process.env.GROQ_API_KEY
-        }
-      });
+    await automator.initialize();
+    await automator.navigateToJobApplication(jobUrl);
 
-      let output = '';
-      let errorOutput = '';
+    const { formFields, jobTitle, companyName, jobDescription } = await automator.analyzeForm();
 
-      pythonProcess.stdout.on('data', (data) => {
-        const chunk = data.toString();
-        console.log(chunk);
-        output += chunk;
-      });
+    console.log(`🏢 Company: ${companyName || 'Unknown'}`);
+    console.log(`💼 Position: ${jobTitle || 'Unknown'}`);
+    console.log(`📋 Found ${formFields.length} form fields`);
 
-      pythonProcess.stderr.on('data', (data) => {
-        const chunk = data.toString();
-        console.error(chunk);
-        errorOutput += chunk;
-      });
+    // Generate AI responses
+    const jobData = {
+      companyName: companyName || 'Unknown Company',
+      jobTitle: jobTitle || 'Unknown Position',
+      jobDescription: jobDescription || 'No description provided',
+      formFields
+    };
 
-      pythonProcess.on('close', (code) => {
-        console.log(`🔄 Selenium process exited with code ${code}`);
-        
-        try {
-          // Try to parse the last line as JSON result
-          const lines = output.trim().split('\n');
-          const lastLine = lines[lines.length - 1];
-          const result = JSON.parse(lastLine);
-          
-          resolve(NextResponse.json(result));
-        } catch (parseError) {
-          // If parsing fails, return a generic success message
-          if (code === 0) {
-            resolve(NextResponse.json({
-              success: true,
-              message: 'Selenium automation completed! Please review the form in the opened browser.',
-              output: output,
-              logs: output
-            }));
-          } else {
-            resolve(NextResponse.json({
-              success: false,
-              message: 'Selenium automation failed',
-              error: errorOutput || output,
-              code: code
-            }, { status: 500 }));
-          }
-        }
-      });
+    const aiResponses = await generatePersonalizedResponses(jobData, userBg);
 
-      pythonProcess.on('error', (error) => {
-        console.error('❌ Failed to start Selenium process:', error);
-        resolve(NextResponse.json({
-          success: false,
-          message: 'Failed to start browser automation. Please ensure Python and Selenium are installed.',
-          error: error.message
-        }, { status: 500 }));
-      });
+    // Merge user info with AI responses (ensure phoneNumber for field mapping)
+    const completeResponses: Record<string, string> = {
+      firstName: userBg.firstName,
+      lastName: userBg.lastName,
+      email: userBg.email,
+      phoneNumber: userBg.phoneNumber,
+      ...aiResponses
+    };
+
+    await automator.fillForm(completeResponses);
+
+    // Try to click submit (best effort - not all forms have a simple submit)
+    try {
+      const submitClicked = await automator.tryClickSubmit();
+      if (submitClicked) {
+        console.log('✅ Submit button clicked');
+      }
+    } catch {
+      // Ignore - many forms are multi-step or have custom submit logic
+    }
+
+    await automator.forceClose();
+
+    return NextResponse.json({
+      success: true,
+      message: 'Job application form filled successfully. Please review and submit if needed.',
+      data: {
+        jobTitle: jobTitle || 'Unknown Position',
+        companyName: companyName || 'Unknown Company',
+        fieldsFound: formFields.length
+      }
     });
 
   } catch (error) {
+    await automator.forceClose();
+
     console.error('❌ Job application automation failed:', error);
-    
+
     return NextResponse.json({
       success: false,
       message: error instanceof Error ? error.message : 'Failed to process job application',
-      error: process.env.NODE_ENV === 'development' ? error : undefined
+      error: process.env.NODE_ENV === 'development' ? String(error) : undefined
     }, { status: 500 });
   }
 }
