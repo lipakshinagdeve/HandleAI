@@ -63,7 +63,7 @@ export default function Dashboard() {
         setApplications(data.applications.map((app: { id: string; job_url: string; status: string; position: string; company: string }) => ({
           id: app.id,
           url: app.job_url,
-          status: app.status === 'applied' ? 'applied' : app.status === 'rejected' ? 'failed' : 'pending',
+          status: app.status === 'applied' ? 'applied' : (app.status === 'rejected' || app.status === 'failed') ? 'failed' : 'pending',
           title: app.position,
           company: app.company,
         })));
@@ -84,7 +84,7 @@ export default function Dashboard() {
           company: app.company || 'Unknown Company',
           position: app.title || 'Unknown Position',
           jobUrl: app.url,
-          status: app.status === 'applied' ? 'applied' : app.status === 'failed' ? 'rejected' : 'saved',
+          status: app.status === 'applied' ? 'applied' : app.status === 'failed' ? 'failed' : 'saved',
         }),
       });
     } catch (err) {
@@ -116,11 +116,20 @@ export default function Dashboard() {
     setIsProcessing(true);
     setMessage('');
 
+    const getDomain = (u: string) => {
+      try {
+        return new URL(u).hostname.replace(/^www\./, '');
+      } catch {
+        return 'Job';
+      }
+    };
+
     for (const url of urls) {
       const trimmedUrl = url.trim();
+      const domain = getDomain(trimmedUrl);
       setApplications((prev) => [
         ...prev,
-        { url: trimmedUrl, status: 'processing' },
+        { url: trimmedUrl, status: 'processing', title: 'Applying...', company: domain },
       ]);
 
       try {
@@ -138,7 +147,14 @@ export default function Dashboard() {
           body: JSON.stringify({ jobUrl: trimmedUrl, userBackground }),
         });
 
-        const data = await response.json();
+        let data: { success?: boolean; message?: string; data?: { jobTitle?: string; companyName?: string } };
+        try {
+          data = await response.json();
+        } catch {
+          setMessage(`Server error for ${domain}. Check that GROQ_API_KEY is set in .env.local and Playwright is installed (npx playwright install chromium).`);
+          data = { success: false, data: { jobTitle: 'Job Application', companyName: domain } };
+        }
+
         const resultStatus = data.success ? 'applied' : 'failed';
         const title = data.data?.jobTitle || 'Job Application';
         const company = data.data?.companyName || 'Unknown Company';
@@ -151,13 +167,19 @@ export default function Dashboard() {
           )
         );
 
+        if (!data.success && data.message) {
+          setMessage(data.message);
+        }
+
         await saveApplication({
           url: trimmedUrl,
           title,
           company,
           status: resultStatus,
         });
-      } catch {
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : 'Network or unexpected error';
+        setMessage(errMsg);
         setApplications((prev) =>
           prev.map((app) =>
             app.url === trimmedUrl ? { ...app, status: 'failed' } : app

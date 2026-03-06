@@ -13,14 +13,14 @@ import {
   Loader2,
 } from 'lucide-react';
 
-type Status = 'all' | 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected';
+type Status = 'all' | 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected' | 'failed';
 
 interface TrackedApplication {
   id: string;
   job_url: string;
   position: string;
   company: string;
-  status: 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected';
+  status: 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected' | 'failed';
   applied_at: string;
 }
 
@@ -54,6 +54,12 @@ const statusConfig: Record<string, { icon: typeof CheckCircle; label: string; cl
     label: 'Rejected',
     classes: 'bg-red-50 text-red-600',
     dot: 'bg-red-400',
+  },
+  failed: {
+    icon: XCircle,
+    label: 'Failed',
+    classes: 'bg-amber-50 text-amber-600',
+    dot: 'bg-amber-400',
   },
 };
 
@@ -105,9 +111,10 @@ export default function Tracker() {
     interviewing: applications.filter((a) => a.status === 'interviewing').length,
     offered: applications.filter((a) => a.status === 'offered').length,
     rejected: applications.filter((a) => a.status === 'rejected').length,
+    failed: applications.filter((a) => a.status === 'failed').length,
   };
 
-  const filterOptions: Status[] = ['all', 'saved', 'applied', 'interviewing', 'offered', 'rejected'];
+  const filterOptions: Status[] = ['all', 'saved', 'applied', 'failed', 'interviewing', 'offered', 'rejected'];
 
   return (
     <AppShell>

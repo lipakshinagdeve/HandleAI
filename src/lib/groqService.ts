@@ -116,9 +116,10 @@ Return ONLY a JSON object with field names as keys and responses as values:
         throw new Error('AI generated invalid JSON response');
       }
     }
-  } catch (error) {
-    console.error('Error generating personalized responses:', error);
-    throw new Error('Failed to generate personalized responses');
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('Error generating personalized responses:', msg);
+    throw new Error(`Groq API failed: ${msg}`);
   }
 }
 

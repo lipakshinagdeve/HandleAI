@@ -5,17 +5,47 @@ import type { UserBackground } from '@/lib/groqService';
 
 export const maxDuration = 120; // Allow up to 2 minutes for browser automation (Render, Vercel Pro)
 
+function getDomainFromUrl(url: string): string {
+  try {
+    const host = new URL(url).hostname;
+    return host.replace(/^www\./, '');
+  } catch {
+    return 'Job';
+  }
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const automator = new JobApplicationAutomator();
+  let companyName = '';
+  let jobTitle = '';
+  let jobUrl = '';
+
+  const safeForceClose = async () => {
+    try {
+      await automator.forceClose();
+    } catch (closeErr) {
+      console.error('Error closing browser:', closeErr);
+    }
+  };
 
   try {
-    const { jobUrl, userBackground } = await request.json();
+    const body = await request.json();
+    const { jobUrl: url, userBackground } = body;
+    jobUrl = url;
 
     if (!jobUrl || !userBackground) {
       return NextResponse.json({
         success: false,
         message: 'Job URL and user background are required'
       }, { status: 400 });
+    }
+
+    if (!process.env.GROQ_API_KEY) {
+      return NextResponse.json({
+        success: false,
+        message: 'GROQ_API_KEY is not configured. Add it to your .env.local file.',
+        data: { jobTitle: 'Job Application', companyName: getDomainFromUrl(jobUrl) }
+      }, { status: 500 });
     }
 
     console.log('🚀 Starting Playwright automation...');
@@ -33,8 +63,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     await automator.initialize();
     await automator.navigateToJobApplication(jobUrl);
+    await automator.waitForManualLogin(); // Pause locally so user can log in if needed
 
-    const { formFields, jobTitle, companyName, jobDescription } = await automator.analyzeForm();
+    const { formFields, jobTitle: analyzedTitle, companyName: analyzedCompany, jobDescription } = await automator.analyzeForm();
+    companyName = analyzedCompany || getDomainFromUrl(jobUrl);
+    jobTitle = analyzedTitle || 'Job Application';
 
     console.log(`🏢 Company: ${companyName || 'Unknown'}`);
     console.log(`💼 Position: ${jobTitle || 'Unknown'}`);
@@ -42,7 +75,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // Generate AI responses
     const jobData = {
-      companyName: companyName || 'Unknown Company',
+      companyName: companyName || getDomainFromUrl(jobUrl),
       jobTitle: jobTitle || 'Unknown Position',
       jobDescription: jobDescription || 'No description provided',
       formFields
@@ -71,27 +104,32 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       // Ignore - many forms are multi-step or have custom submit logic
     }
 
-    await automator.forceClose();
+    await safeForceClose();
 
     return NextResponse.json({
       success: true,
       message: 'Job application form filled successfully. Please review and submit if needed.',
       data: {
         jobTitle: jobTitle || 'Unknown Position',
-        companyName: companyName || 'Unknown Company',
+        companyName: companyName || getDomainFromUrl(jobUrl),
         fieldsFound: formFields.length
       }
     });
 
   } catch (error) {
-    await automator.forceClose();
+    await safeForceClose();
 
+    const errMessage = error instanceof Error ? error.message : String(error);
     console.error('❌ Job application automation failed:', error);
 
     return NextResponse.json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to process job application',
-      error: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      message: errMessage,
+      error: process.env.NODE_ENV === 'development' ? errMessage : undefined,
+      data: {
+        jobTitle: jobTitle || 'Job Application',
+        companyName: companyName || (jobUrl ? getDomainFromUrl(jobUrl) : 'Unknown Company')
+      }
     }, { status: 500 });
   }
 }

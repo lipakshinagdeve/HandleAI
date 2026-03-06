@@ -57,10 +57,24 @@ export class JobApplicationAutomator {
       throw new Error('Browser not initialized. Call initialize() first.');
     }
 
-    await this.page.goto(url, { waitUntil: 'networkidle' });
+    // Use domcontentloaded for faster load; networkidle can timeout on complex sites
+    await this.page.goto(url, {
+      waitUntil: 'domcontentloaded',
+      timeout: 60000,
+    });
     
-    // Wait a bit for any dynamic content to load
-    await this.page.waitForTimeout(2000);
+    // Wait for dynamic content and forms to load
+    await this.page.waitForTimeout(3000);
+  }
+
+  /** In local (visible) mode: pause so user can log in to the site. Skipped in serverless. */
+  async waitForManualLogin(): Promise<void> {
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.RENDER;
+    if (isServerless) return;
+
+    const waitSeconds = 30;
+    console.log(`\n⏳ If this site requires login (e.g. Internshala), log in now in the browser window. Continuing in ${waitSeconds}s...\n`);
+    await this.page?.waitForTimeout(waitSeconds * 1000);
   }
 
   async analyzeForm(): Promise<{
