@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2 } from 'lucide-react';
@@ -10,6 +10,17 @@ export default function Login() {
   const [formData, setFormData] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [checkingAuth, setCheckingAuth] = useState(true);
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (userData) {
+      router.replace('/dashboard');
+    } else {
+      setCheckingAuth(false);
+    }
+  }, [router]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -32,6 +43,10 @@ export default function Login() {
       if (data.success) {
         setMessage('Login successful! Redirecting...');
         localStorage.setItem('user', JSON.stringify(data.user));
+        if (data.session) {
+          localStorage.setItem('supabase_session', JSON.stringify(data.session));
+        }
+        window.dispatchEvent(new CustomEvent('auth-change'));
         setTimeout(() => router.push('/dashboard'), 1000);
       } else {
         if (data.emailNotConfirmed) {
@@ -48,6 +63,14 @@ export default function Login() {
       setLoading(false);
     }
   };
+
+  if (checkingAuth) {
+    return (
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-zinc-300 border-t-zinc-900 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#fafafa] flex flex-col">

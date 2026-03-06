@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/Navbar';
 import {
@@ -90,6 +90,7 @@ const terminalLines = [
 ];
 
 export default function Home() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [feedbackData, setFeedbackData] = useState({
     name: '',
@@ -99,6 +100,17 @@ export default function Home() {
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
+
+  useEffect(() => {
+    const updateAuth = () => setIsLoggedIn(!!localStorage.getItem('user'));
+    updateAuth();
+    window.addEventListener('auth-change', updateAuth);
+    window.addEventListener('storage', updateAuth);
+    return () => {
+      window.removeEventListener('auth-change', updateAuth);
+      window.removeEventListener('storage', updateAuth);
+    };
+  }, []);
 
   const handleFeedbackSubmit = async () => {
     if (!feedbackData.message.trim()) return;
@@ -170,10 +182,10 @@ export default function Home() {
             {/* CTA Buttons */}
             <div className="animate-slide-up stagger-2 mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                href="/signup"
+                href={isLoggedIn ? '/dashboard' : '/signup'}
                 className="group relative inline-flex items-center gap-2 px-8 py-4 bg-zinc-900 text-white text-sm font-medium rounded-2xl hover:bg-zinc-800 transition-all duration-300 hover:shadow-elevated active:scale-[0.97] shimmer-hover"
               >
-                Start Applying Free
+                {isLoggedIn ? 'Go to Dashboard' : 'Start Applying Free'}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <a
@@ -427,10 +439,10 @@ export default function Home() {
               </p>
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link
-                  href="/signup"
+                  href={isLoggedIn ? '/dashboard' : '/signup'}
                   className="group inline-flex items-center gap-2 px-8 py-4 bg-white text-zinc-900 text-sm font-semibold rounded-2xl hover:bg-zinc-100 transition-all duration-300 active:scale-[0.97] shimmer-hover"
                 >
-                  Start Applying Free
+                  {isLoggedIn ? 'Go to Dashboard' : 'Start Applying Free'}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
                 </Link>
                 <div className="flex items-center gap-2 text-sm text-zinc-500">

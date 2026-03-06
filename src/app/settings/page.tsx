@@ -47,6 +47,7 @@ export default function Settings() {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('supabase_session');
     router.push('/');
   };
 
@@ -65,6 +66,7 @@ export default function Settings() {
 
       if (data.success) {
         localStorage.removeItem('user');
+        localStorage.removeItem('supabase_session');
         router.push('/');
       } else {
         setMessage(data.message || 'Failed to delete account');

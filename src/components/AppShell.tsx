@@ -43,6 +43,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const handleLogout = () => {
     localStorage.removeItem('user');
+    localStorage.removeItem('supabase_session');
+    window.dispatchEvent(new CustomEvent('auth-change'));
     router.push('/');
   };
 

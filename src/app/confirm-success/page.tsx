@@ -28,6 +28,7 @@ function ConfirmSuccessContent() {
       };
 
       localStorage.setItem('user', JSON.stringify(userData));
+      window.dispatchEvent(new CustomEvent('auth-change'));
       setMessage('Email confirmed! Redirecting to dashboard...');
       window.history.replaceState({}, '', '/confirm-success');
 
