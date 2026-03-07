@@ -13,14 +13,14 @@ import {
   Loader2,
 } from 'lucide-react';
 
-type Status = 'all' | 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected' | 'failed';
+type Status = 'all' | 'saved' | 'applied' | 'rejected' | 'failed';
 
 interface TrackedApplication {
   id: string;
   job_url: string;
   position: string;
   company: string;
-  status: 'saved' | 'applied' | 'interviewing' | 'offered' | 'rejected' | 'failed';
+  status: 'saved' | 'applied' | 'rejected' | 'failed';
   applied_at: string;
 }
 
@@ -37,23 +37,11 @@ const statusConfig: Record<string, { icon: typeof CheckCircle; label: string; cl
     classes: 'bg-emerald-50 text-emerald-600',
     dot: 'bg-emerald-400',
   },
-  interviewing: {
-    icon: Clock,
-    label: 'Interviewing',
-    classes: 'bg-blue-50 text-blue-600',
-    dot: 'bg-blue-400',
-  },
-  offered: {
-    icon: CheckCircle,
-    label: 'Offered',
-    classes: 'bg-violet-50 text-violet-600',
-    dot: 'bg-violet-400',
-  },
   rejected: {
     icon: XCircle,
-    label: 'Rejected',
-    classes: 'bg-red-50 text-red-600',
-    dot: 'bg-red-400',
+    label: 'Failed',
+    classes: 'bg-amber-50 text-amber-600',
+    dot: 'bg-amber-400',
   },
   failed: {
     icon: XCircle,
@@ -97,24 +85,25 @@ export default function Tracker() {
 
   const filtered = applications.filter((app) => {
     const matchesFilter =
-      activeFilter === 'all' || app.status === activeFilter;
+      activeFilter === 'all' ||
+      app.status === activeFilter ||
+      (activeFilter === 'failed' && (app.status === 'rejected' || app.status === 'failed'));
     const matchesSearch =
       app.position.toLowerCase().includes(search.toLowerCase()) ||
       app.company.toLowerCase().includes(search.toLowerCase());
     return matchesFilter && matchesSearch;
   });
 
+  const failedCount = applications.filter((a) => a.status === 'rejected' || a.status === 'failed').length;
   const counts = {
     all: applications.length,
     saved: applications.filter((a) => a.status === 'saved').length,
     applied: applications.filter((a) => a.status === 'applied').length,
-    interviewing: applications.filter((a) => a.status === 'interviewing').length,
-    offered: applications.filter((a) => a.status === 'offered').length,
-    rejected: applications.filter((a) => a.status === 'rejected').length,
-    failed: applications.filter((a) => a.status === 'failed').length,
+    rejected: failedCount,
+    failed: failedCount,
   };
 
-  const filterOptions: Status[] = ['all', 'saved', 'applied', 'failed', 'interviewing', 'offered', 'rejected'];
+  const filterOptions: Status[] = ['all', 'saved', 'applied', 'failed'];
 
   return (
     <AppShell>

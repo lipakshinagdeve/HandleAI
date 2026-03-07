@@ -14,6 +14,34 @@ function getDomainFromUrl(url: string): string {
   }
 }
 
+function getTitleFromUrl(url: string): string {
+  try {
+    const path = new URL(url).pathname;
+    const segments = path.split('/').filter(Boolean);
+    const jobSegment = segments.find((s) => /job|position|role|career|opening/i.test(s));
+    const idx = jobSegment ? segments.indexOf(jobSegment) + 1 : -1;
+    if (idx > 0 && idx < segments.length) {
+      const raw = segments[idx];
+      return raw
+        .split(/[-_]/)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+    }
+    if (segments.length > 0) {
+      const last = segments[segments.length - 1];
+      if (last.length > 2 && /^[a-z-]+$/i.test(last)) {
+        return last
+          .split(/[-_]/)
+          .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+          .join(' ');
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return '';
+}
+
 export async function POST(request: NextRequest): Promise<NextResponse> {
   const automator = new JobApplicationAutomator();
   let companyName = '';
@@ -67,7 +95,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const { formFields, jobTitle: analyzedTitle, companyName: analyzedCompany, jobDescription } = await automator.analyzeForm();
     companyName = analyzedCompany || getDomainFromUrl(jobUrl);
-    jobTitle = analyzedTitle || 'Job Application';
+    jobTitle = analyzedTitle || getTitleFromUrl(jobUrl) || 'Job Application';
 
     console.log(`🏢 Company: ${companyName || 'Unknown'}`);
     console.log(`💼 Position: ${jobTitle || 'Unknown'}`);
@@ -76,7 +104,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Generate AI responses
     const jobData = {
       companyName: companyName || getDomainFromUrl(jobUrl),
-      jobTitle: jobTitle || 'Unknown Position',
+      jobTitle: jobTitle || getTitleFromUrl(jobUrl) || 'Job Application',
       jobDescription: jobDescription || 'No description provided',
       formFields
     };
@@ -110,7 +138,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       success: true,
       message: 'Job application form filled successfully. Please review and submit if needed.',
       data: {
-        jobTitle: jobTitle || 'Unknown Position',
+        jobTitle: jobTitle || getTitleFromUrl(jobUrl) || 'Job Application',
         companyName: companyName || getDomainFromUrl(jobUrl),
         fieldsFound: formFields.length
       }
@@ -127,8 +155,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       message: errMessage,
       error: process.env.NODE_ENV === 'development' ? errMessage : undefined,
       data: {
-        jobTitle: jobTitle || 'Job Application',
-        companyName: companyName || (jobUrl ? getDomainFromUrl(jobUrl) : 'Unknown Company')
+        jobTitle: jobTitle || (jobUrl ? getTitleFromUrl(jobUrl) : '') || 'Job Application',
+        companyName: companyName || (jobUrl ? getDomainFromUrl(jobUrl) : '') || 'Job'
       }
     }, { status: 500 });
   }

@@ -32,24 +32,51 @@ export async function POST(request: NextRequest) {
   try {
     const { userId, company, position, jobUrl, status, notes, aiAnalysis } = await request.json();
 
-    if (!userId || !company || !position) {
+    if (!userId || !company || !position || !jobUrl) {
       return NextResponse.json({ 
         success: false, 
-        message: 'User ID, company, and position are required' 
+        message: 'User ID, company, position, and job URL are required' 
       }, { status: 400 });
+    }
+
+    // Upsert: update existing application for same user+url, or insert new
+    const { data: existing } = await supabaseAdmin
+      .from('job_applications')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('job_url', jobUrl)
+      .limit(1)
+      .maybeSingle();
+
+    const payload = {
+      user_id: userId,
+      company,
+      position,
+      job_url: jobUrl,
+      status: status || 'applied',
+      notes: notes ?? null,
+      ai_analysis: aiAnalysis ?? null,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (existing?.id) {
+      const { data, error } = await supabaseAdmin
+        .from('job_applications')
+        .update(payload)
+        .eq('id', existing.id)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Update application error:', error);
+        return NextResponse.json({ success: false, message: error.message }, { status: 500 });
+      }
+      return NextResponse.json({ success: true, application: data });
     }
 
     const { data, error } = await supabaseAdmin
       .from('job_applications')
-      .insert({
-        user_id: userId,
-        company,
-        position,
-        job_url: jobUrl,
-        status: status || 'applied',
-        notes,
-        ai_analysis: aiAnalysis
-      })
+      .insert(payload)
       .select()
       .single();
 

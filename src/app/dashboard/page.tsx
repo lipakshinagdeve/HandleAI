@@ -29,9 +29,17 @@ interface User {
 interface Application {
   id?: string;
   url: string;
-  status: 'pending' | 'processing' | 'applied' | 'failed';
+  status: 'pending' | 'processing' | 'applied' | 'failed' | 'saved';
   title?: string;
   company?: string;
+}
+
+function getDomainFromUrl(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return 'Job';
+  }
 }
 
 export default function Dashboard() {
@@ -63,7 +71,7 @@ export default function Dashboard() {
         setApplications(data.applications.map((app: { id: string; job_url: string; status: string; position: string; company: string }) => ({
           id: app.id,
           url: app.job_url,
-          status: app.status === 'applied' ? 'applied' : (app.status === 'rejected' || app.status === 'failed') ? 'failed' : 'pending',
+          status: app.status === 'applied' ? 'applied' : (app.status === 'rejected' || app.status === 'failed') ? 'failed' : app.status === 'saved' ? 'saved' : 'pending',
           title: app.position,
           company: app.company,
         })));
@@ -81,14 +89,78 @@ export default function Dashboard() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           userId: user.id,
-          company: app.company || 'Unknown Company',
-          position: app.title || 'Unknown Position',
+          company: app.company || getDomainFromUrl(app.url),
+          position: app.title || 'Job Application',
           jobUrl: app.url,
           status: app.status === 'applied' ? 'applied' : app.status === 'failed' ? 'failed' : 'saved',
         }),
       });
     } catch (err) {
       console.error('Failed to save application:', err);
+    }
+  };
+
+  const extractJobMetadata = async (url: string): Promise<{ title: string; company: string }> => {
+    try {
+      const res = await fetch('/api/jobs/extract-metadata', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobUrl: url }),
+      });
+      const data = await res.json();
+      if (data.success && data.data) {
+        return {
+          title: data.data.jobTitle || 'Job Application',
+          company: data.data.companyName || getDomainFromUrl(url),
+        };
+      }
+    } catch {
+      // ignore
+    }
+    return { title: 'Job Application', company: getDomainFromUrl(url) };
+  };
+
+  const handleSaveForLater = async () => {
+    const urls = jobUrls
+      .trim()
+      .split('\n')
+      .filter((url) => url.trim());
+
+    if (urls.length === 0) {
+      setMessage('Please enter at least one job URL to save');
+      return;
+    }
+
+    if (!user) {
+      setMessage('User not found. Please log in again.');
+      return;
+    }
+
+    setMessage('');
+    setIsProcessing(true);
+    let savedCount = 0;
+
+    for (const url of urls) {
+      const trimmedUrl = url.trim();
+      const { title, company } = await extractJobMetadata(trimmedUrl);
+      try {
+        await saveApplication({
+          url: trimmedUrl,
+          title,
+          company,
+          status: 'saved',
+        });
+        savedCount++;
+      } catch {
+        // continue
+      }
+    }
+
+    setIsProcessing(false);
+    if (savedCount > 0) {
+      setMessage(`Saved ${savedCount} job${savedCount > 1 ? 's' : ''} to your tracker.`);
+      setJobUrls('');
+      loadApplications(user.id);
     }
   };
 
@@ -116,20 +188,15 @@ export default function Dashboard() {
     setIsProcessing(true);
     setMessage('');
 
-    const getDomain = (u: string) => {
-      try {
-        return new URL(u).hostname.replace(/^www\./, '');
-      } catch {
-        return 'Job';
-      }
-    };
-
     for (const url of urls) {
       const trimmedUrl = url.trim();
-      const domain = getDomain(trimmedUrl);
+      const domain = getDomainFromUrl(trimmedUrl);
+
+      // Fetch real job title and company from the page before applying
+      const metadata = await extractJobMetadata(trimmedUrl);
       setApplications((prev) => [
         ...prev,
-        { url: trimmedUrl, status: 'processing', title: 'Applying...', company: domain },
+        { url: trimmedUrl, status: 'processing', title: metadata.title, company: metadata.company },
       ]);
 
       try {
@@ -152,12 +219,13 @@ export default function Dashboard() {
           data = await response.json();
         } catch {
           setMessage(`Server error for ${domain}. Check that GROQ_API_KEY is set in .env.local and Playwright is installed (npx playwright install chromium).`);
-          data = { success: false, data: { jobTitle: 'Job Application', companyName: domain } };
+          data = { success: false, data: { jobTitle: metadata.title, companyName: metadata.company } };
         }
 
         const resultStatus = data.success ? 'applied' : 'failed';
-        const title = data.data?.jobTitle || 'Job Application';
-        const company = data.data?.companyName || 'Unknown Company';
+        // Prefer apply API data (from page DOM), fall back to metadata we extracted
+        const title = data.data?.jobTitle || metadata.title || 'Job Application';
+        const company = data.data?.companyName || metadata.company || domain;
 
         setApplications((prev) =>
           prev.map((app) =>
@@ -182,14 +250,14 @@ export default function Dashboard() {
         setMessage(errMsg);
         setApplications((prev) =>
           prev.map((app) =>
-            app.url === trimmedUrl ? { ...app, status: 'failed' } : app
+            app.url === trimmedUrl ? { ...app, status: 'failed', title: metadata.title, company: metadata.company } : app
           )
         );
 
         await saveApplication({
           url: trimmedUrl,
-          title: 'Job Application',
-          company: 'Unknown Company',
+          title: metadata.title,
+          company: metadata.company,
           status: 'failed',
         });
       }
@@ -197,6 +265,7 @@ export default function Dashboard() {
 
     setIsProcessing(false);
     setJobUrls('');
+    loadApplications(user.id);
   };
 
   if (loading || !user) return null;
@@ -289,25 +358,34 @@ export default function Dashboard() {
 
           <div className="mt-4 flex items-center justify-between">
             <p className="text-xs text-zinc-400">
-              One URL per line. AI processes each sequentially.
+              One URL per line. Save for later or apply with AI.
             </p>
-            <button
-              onClick={handleApply}
-              disabled={isProcessing || !jobUrls.trim()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" />
-                  Apply
-                </>
-              )}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleSaveForLater}
+                disabled={isProcessing || !jobUrls.trim()}
+                className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 text-sm font-medium rounded-xl hover:bg-zinc-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+              >
+                Save for later
+              </button>
+              <button
+                onClick={handleApply}
+                disabled={isProcessing || !jobUrls.trim()}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-zinc-900 text-white text-sm font-medium rounded-xl hover:bg-zinc-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all active:scale-[0.98]"
+              >
+                {isProcessing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    Apply
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -344,6 +422,9 @@ export default function Dashboard() {
                   {app.status === 'pending' && (
                     <div className="w-4 h-4 rounded-full border-2 border-zinc-300 flex-shrink-0" />
                   )}
+                  {app.status === 'saved' && (
+                    <LinkIcon className="w-4 h-4 text-zinc-400 flex-shrink-0" />
+                  )}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-zinc-900 truncate">
                       {app.title
@@ -359,7 +440,9 @@ export default function Dashboard() {
                           ? 'bg-red-50 text-red-600'
                           : app.status === 'processing'
                             ? 'bg-indigo-50 text-indigo-600'
-                            : 'bg-zinc-100 text-zinc-500'
+                            : app.status === 'saved'
+                              ? 'bg-zinc-100 text-zinc-600'
+                              : 'bg-zinc-100 text-zinc-500'
                     }`}
                   >
                     {app.status}

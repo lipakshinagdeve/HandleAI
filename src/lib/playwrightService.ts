@@ -89,43 +89,79 @@ export class JobApplicationAutomator {
 
     // Extract job information
     const jobInfo = await this.page.evaluate(() => {
-      // Common selectors for job titles and company names
+      const isValidTitle = (s: string) => s && s.length > 0 && s.length < 150 && !/^(apply|submit|login|sign in)/i.test(s.trim());
+      const isValidCompany = (s: string) => s && s.length > 0 && s.length < 100 && !/^(apply|submit|login|sign in)/i.test(s.trim());
+
+      // Job title selectors (order matters - most specific first)
       const titleSelectors = [
-        'h1', '[data-testid="job-title"]', '.job-title', '.position-title',
-        '[class*="title"]', '[class*="job"]', '[class*="position"]'
+        '[data-testid="job-title"]', '[data-qa="job-title"]', '[data-cy="job-title"]',
+        '.job-title', '.position-title', '.job-header-title', '.posting-headline',
+        'h1[class*="job"]', 'h1[class*="title"]', 'h1[class*="position"]',
+        '[class*="JobTitle"]', '[class*="job-title"]', '[class*="position-title"]',
+        'h1', 'h2.posting-title'
       ];
-      
+
       const companySelectors = [
-        '[data-testid="company-name"]', '.company-name', '.employer-name',
-        '[class*="company"]', '[class*="employer"]'
+        '[data-testid="company-name"]', '[data-qa="company-name"]', '[data-cy="company-name"]',
+        '.company-name', '.employer-name', '.job-company', '.posting-company',
+        '[class*="CompanyName"]', '[class*="company-name"]', '[class*="employer-name"]',
+        'a[href*="/company/"]', '[class*="company"]', '[class*="employer"]'
       ];
 
       let jobTitle = '';
       let companyName = '';
       let jobDescription = '';
 
-      // Try to find job title
+      // Try to find job title from DOM
       for (const selector of titleSelectors) {
         const element = document.querySelector(selector);
-        if (element && element.textContent && element.textContent.trim().length > 0) {
-          jobTitle = element.textContent.trim();
-          break;
+        if (element) {
+          const text = element.textContent?.trim() || '';
+          if (isValidTitle(text)) {
+            jobTitle = text.split('\n')[0].trim();
+            break;
+          }
         }
       }
 
-      // Try to find company name
+      // Fallback: parse from meta tags (og:title, twitter:title)
+      if (!jobTitle) {
+        const ogTitle = document.querySelector('meta[property="og:title"]')?.getAttribute('content');
+        const twitterTitle = document.querySelector('meta[name="twitter:title"]')?.getAttribute('content');
+        const docTitle = document.title;
+        for (const t of [ogTitle, twitterTitle, docTitle]) {
+          if (t && isValidTitle(t)) {
+            jobTitle = t.split(/[|\-–—]/)[0].trim();
+            break;
+          }
+        }
+      }
+
+      // Try to find company name from DOM
       for (const selector of companySelectors) {
         const element = document.querySelector(selector);
-        if (element && element.textContent && element.textContent.trim().length > 0) {
-          companyName = element.textContent.trim();
-          break;
+        if (element) {
+          const text = element.textContent?.trim() || '';
+          if (isValidCompany(text)) {
+            companyName = text.split('\n')[0].trim();
+            break;
+          }
+        }
+      }
+
+      // Fallback: parse company from page title (e.g. "Job Title | Company" or "Company - Job Title")
+      if (!companyName && document.title) {
+        const parts = document.title.split(/[|\-–—]/).map((p) => p.trim());
+        if (parts.length >= 2) {
+          const last = parts[parts.length - 1];
+          if (isValidCompany(last) && last.length < 50) companyName = last;
         }
       }
 
       // Get job description (look for longer text content)
       const descriptionElements = document.querySelectorAll('p, div, section');
       let longestText = '';
-      descriptionElements.forEach(el => {
+      descriptionElements.forEach((el) => {
         const text = el.textContent?.trim() || '';
         if (text.length > longestText.length && text.length > 100) {
           longestText = text;
@@ -208,8 +244,8 @@ export class JobApplicationAutomator {
 
     return {
       formFields,
-      jobTitle: jobInfo.jobTitle || 'Unknown Position',
-      companyName: jobInfo.companyName || 'Unknown Company',
+      jobTitle: jobInfo.jobTitle || '',
+      companyName: jobInfo.companyName || '',
       jobDescription: jobInfo.jobDescription || 'No description available'
     };
   }
