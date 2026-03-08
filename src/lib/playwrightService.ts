@@ -1,5 +1,37 @@
 import { chromium, Browser, Page } from 'playwright';
+import { existsSync } from 'fs';
+import { join } from 'path';
 import { JobFormField } from './groqService';
+
+function findChromiumExecutable(): string | undefined {
+  const searchRoots = [
+    process.env.PLAYWRIGHT_BROWSERS_PATH,
+    '/opt/render/.cache/ms-playwright',
+    join(process.env.HOME || '/opt/render', '.cache', 'ms-playwright'),
+    join(process.cwd(), 'playwright-browsers'),
+  ].filter(Boolean) as string[];
+
+  for (const root of searchRoots) {
+    if (!existsSync(root)) continue;
+    try {
+      const { readdirSync } = require('fs');
+      const entries: string[] = readdirSync(root);
+      const chromiumDir = entries.find((e: string) => e.startsWith('chromium'));
+      if (chromiumDir) {
+        const candidates = [
+          join(root, chromiumDir, 'chrome-linux', 'headless_shell'),
+          join(root, chromiumDir, 'chrome-linux', 'chrome'),
+          join(root, chromiumDir, 'chrome'),
+        ];
+        const found = candidates.find(existsSync);
+        if (found) return found;
+      }
+    } catch {
+      // continue searching
+    }
+  }
+  return undefined;
+}
 
 export class JobApplicationAutomator {
   private browser: Browser | null = null;
@@ -7,19 +39,20 @@ export class JobApplicationAutomator {
 
   async initialize() {
     try {
-      // Render = long-running server (not serverless). Vercel/Lambda/Netlify = serverless (Playwright not supported).
       const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
       const isRender = process.env.RENDER;
-      const isLocal = !isServerless && !isRender;
 
       if (isServerless) {
         throw new Error('Playwright does not work on serverless (Vercel, Lambda, Netlify). Deploy to Render or run locally.');
       }
 
       if (isRender) {
-        // Render: long-running server, use regular Playwright Chromium (headless)
+        const executablePath = findChromiumExecutable();
+        console.log(`🔍 Chromium executable path: ${executablePath || 'using default'}`);
+
         this.browser = await chromium.launch({
           headless: true,
+          ...(executablePath ? { executablePath } : {}),
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
