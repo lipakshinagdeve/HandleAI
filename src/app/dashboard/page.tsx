@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
+import { ApplicationReport as ApplicationReportComponent } from '@/components/ApplicationReport';
+import type { Report, ReportEntry } from '@/components/ApplicationReport';
 import {
   Send,
   Loader2,
@@ -13,6 +15,7 @@ import {
   XCircle,
   Plus,
   ArrowRight,
+  FileText,
 } from 'lucide-react';
 
 interface User {
@@ -50,6 +53,7 @@ export default function Dashboard() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState('');
   const [applications, setApplications] = useState<Application[]>([]);
+  const [lastReport, setLastReport] = useState<Report | null>(null);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -120,6 +124,40 @@ export default function Dashboard() {
     return { title: 'Job Application', company: getDomainFromUrl(url) };
   };
 
+  const saveReportToStorage = (report: Report) => {
+    try {
+      const stored = localStorage.getItem('application_reports');
+      const reports: Report[] = stored ? JSON.parse(stored) : [];
+      const existingIdx = reports.findIndex((r) => r.id === report.id);
+      if (existingIdx >= 0) {
+        reports[existingIdx] = report;
+      } else {
+        reports.unshift(report);
+      }
+      // Keep last 50 reports
+      if (reports.length > 50) reports.length = 50;
+      localStorage.setItem('application_reports', JSON.stringify(reports));
+    } catch {
+      // localStorage may be full
+    }
+  };
+
+  const buildReport = (
+    sourceUrl: string,
+    entries: ReportEntry[]
+  ): Report => {
+    const appliedCount = entries.filter((e) => e.status === 'applied').length;
+    return {
+      id: `report-${Date.now()}`,
+      sourceUrl,
+      timestamp: new Date().toISOString(),
+      entries,
+      totalJobs: entries.length,
+      appliedCount,
+      failedCount: entries.length - appliedCount,
+    };
+  };
+
   const handleSaveForLater = async () => {
     const urls = jobUrls
       .trim()
@@ -187,6 +225,8 @@ export default function Dashboard() {
 
     setIsProcessing(true);
     setMessage('');
+    const allReportEntries: ReportEntry[] = [];
+    let batchSourceUrl = urls.length === 1 ? urls[0].trim() : '';
 
     for (const url of urls) {
       const trimmedUrl = url.trim();
@@ -246,6 +286,7 @@ export default function Dashboard() {
         // Handle job listing page (multiple jobs)
         if (data.data?.isListingPage && Array.isArray(data.data.results)) {
           const results = data.data.results;
+          batchSourceUrl = trimmedUrl;
           setApplications((prev) =>
             prev
               .filter((app) => app.url !== trimmedUrl)
@@ -260,6 +301,12 @@ export default function Dashboard() {
           );
           setMessage(data.message || `Processed ${results.length} jobs`);
           for (const r of results) {
+            allReportEntries.push({
+              jobTitle: r.jobTitle,
+              companyName: r.companyName,
+              jobUrl: r.jobUrl,
+              status: r.success ? 'applied' : 'failed',
+            });
             await saveApplication({
               url: r.jobUrl,
               title: r.jobTitle,
@@ -287,6 +334,14 @@ export default function Dashboard() {
             setMessage(`Application failed for ${domain}. Check server logs or try running locally.`);
           }
 
+          allReportEntries.push({
+            jobTitle: title,
+            companyName: company,
+            jobUrl: trimmedUrl,
+            status: resultStatus as 'applied' | 'failed',
+            errorMessage: !data.success ? (data.message || 'Application failed') : undefined,
+          });
+
           await saveApplication({
             url: trimmedUrl,
             title,
@@ -303,6 +358,14 @@ export default function Dashboard() {
           )
         );
 
+        allReportEntries.push({
+          jobTitle: metadata.title,
+          companyName: metadata.company,
+          jobUrl: trimmedUrl,
+          status: 'failed',
+          errorMessage: errMsg,
+        });
+
         await saveApplication({
           url: trimmedUrl,
           title: metadata.title,
@@ -310,6 +373,16 @@ export default function Dashboard() {
           status: 'failed',
         });
       }
+    }
+
+    // Build and save the report
+    if (allReportEntries.length > 0) {
+      const report = buildReport(
+        batchSourceUrl || urls[0]?.trim() || '',
+        allReportEntries
+      );
+      setLastReport(report);
+      saveReportToStorage(report);
     }
 
     setIsProcessing(false);
@@ -438,6 +511,16 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Latest Run Report */}
+        {lastReport && (
+          <div className="mb-8">
+            <ApplicationReportComponent
+              report={lastReport}
+              onDismiss={() => setLastReport(null)}
+            />
+          </div>
+        )}
+
         {/* Application Progress */}
         {applications.length > 0 && (
           <div className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-soft">
@@ -445,13 +528,22 @@ export default function Dashboard() {
               <h2 className="font-semibold text-zinc-900">
                 Application Progress
               </h2>
-              <Link
-                href="/tracker"
-                className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors"
-              >
-                View all
-                <ArrowRight className="w-3.5 h-3.5" />
-              </Link>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/reports"
+                  className="inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-700 transition-colors"
+                >
+                  <FileText className="w-3.5 h-3.5" />
+                  Reports
+                </Link>
+                <Link
+                  href="/tracker"
+                  className="inline-flex items-center gap-1 text-sm text-accent hover:text-accent-hover transition-colors"
+                >
+                  View all
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
             </div>
             <div className="space-y-2">
               {applications.slice(0, 20).map((app, i) => (
