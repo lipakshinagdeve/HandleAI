@@ -225,9 +225,21 @@ export default function Dashboard() {
           };
         };
         try {
-          data = await response.json();
-        } catch {
-          setMessage(`Server error for ${domain}. Check that GROQ_API_KEY is set in .env.local and Playwright is installed (npx playwright install chromium).`);
+          const text = await response.text();
+          try {
+            data = JSON.parse(text);
+          } catch {
+            const errHint = response.status === 500
+              ? 'Server crashed or timed out. Playwright may not be supported on this host.'
+              : response.status >= 400
+                ? `Server returned ${response.status}`
+                : 'Invalid response from server';
+            setMessage(`${errHint} (${domain}). Try again or run locally with: npx playwright install chromium`);
+            data = { success: false, data: { jobTitle: metadata.title, companyName: metadata.company }, message: errHint };
+          }
+        } catch (e) {
+          const errMsg = e instanceof Error ? e.message : 'Network error';
+          setMessage(`${errMsg} for ${domain}. Check your connection.`);
           data = { success: false, data: { jobTitle: metadata.title, companyName: metadata.company } };
         }
 
@@ -271,6 +283,8 @@ export default function Dashboard() {
 
           if (!data.success && data.message) {
             setMessage(data.message);
+          } else if (!data.success && !data.message) {
+            setMessage(`Application failed for ${domain}. Check server logs or try running locally.`);
           }
 
           await saveApplication({
@@ -440,9 +454,9 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-2">
-              {applications.slice(0, 10).map((app, i) => (
+              {applications.slice(0, 20).map((app, i) => (
                 <div
-                  key={app.id || i}
+                  key={app.id || app.url || i}
                   className="flex items-center gap-3 px-4 py-3 rounded-xl bg-zinc-50 border border-zinc-100"
                 >
                   {app.status === 'processing' && (

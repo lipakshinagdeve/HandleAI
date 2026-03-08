@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { chromium } from 'playwright';
-import chromiumPkg from '@sparticuz/chromium';
 
 export async function GET(_request: NextRequest) {
   try {
     console.log('✅ Playwright imported successfully');
 
-    const isCloud = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.RENDER;
+    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+    if (isServerless) {
+      return NextResponse.json({
+        success: false,
+        message: 'Playwright not supported on serverless. Use Render or run locally.',
+      }, { status: 503 });
+    }
 
     let browser;
     try {
-      if (isCloud) {
-        browser = await chromium.launch({
-          executablePath: await chromiumPkg.executablePath(),
-          args: [...chromiumPkg.args, '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-          headless: true
-        });
-      } else {
-        browser = await chromium.launch({ headless: true });
-      }
+      browser = await chromium.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      });
 
       console.log('✅ Browser launched successfully');
 
@@ -31,7 +31,7 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json({
         success: true,
         message: 'Playwright is working correctly',
-        data: { title, environment: isCloud ? 'cloud' : 'local' }
+        data: { title, environment: process.env.RENDER ? 'render' : 'local' }
       });
 
     } catch (browserError) {

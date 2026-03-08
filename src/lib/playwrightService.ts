@@ -1,5 +1,4 @@
 import { chromium, Browser, Page } from 'playwright';
-import chromiumPkg from '@sparticuz/chromium';
 import { JobFormField } from './groqService';
 
 export class JobApplicationAutomator {
@@ -8,34 +7,41 @@ export class JobApplicationAutomator {
 
   async initialize() {
     try {
-      const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.RENDER;
-      
+      // Render = long-running server (not serverless). Vercel/Lambda/Netlify = serverless (Playwright not supported).
+      const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
+      const isRender = process.env.RENDER;
+      const isLocal = !isServerless && !isRender;
+
       if (isServerless) {
-        // Use lightweight Chromium for serverless environments
+        throw new Error('Playwright does not work on serverless (Vercel, Lambda, Netlify). Deploy to Render or run locally.');
+      }
+
+      if (isRender) {
+        // Render: long-running server, use regular Playwright Chromium (headless)
         this.browser = await chromium.launch({
-          executablePath: await chromiumPkg.executablePath(),
-          args: [
-            ...chromiumPkg.args,
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-web-security'
-          ],
-          headless: true // Always headless in serverless environments
-        });
-        console.log('✅ Browser launched in serverless mode');
-      } else {
-        // Use regular Chromium for local development
-        this.browser = await chromium.launch({
-          headless: false, // Keep visible so user can see what's happening
-          slowMo: 1000, // Slow down actions for better visibility
+          headless: true,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
             '--disable-dev-shm-usage',
             '--disable-web-security',
-            '--disable-features=VizDisplayCompositor'
-          ]
+            '--disable-gpu',
+            '--single-process',
+          ],
+        });
+        console.log('✅ Browser launched on Render');
+      } else {
+        // Local: visible browser for debugging
+        this.browser = await chromium.launch({
+          headless: false,
+          slowMo: 1000,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor',
+          ],
         });
         console.log('✅ Browser launched in visible mode for automation');
       }
@@ -82,9 +88,10 @@ export class JobApplicationAutomator {
       const links: string[] = [];
       const seen = new Set<string>();
 
-      // Patterns that indicate job/position links (Greenhouse, Lever, Workday, custom ATS)
+      // Patterns that indicate job/position links (Greenhouse, Lever, Workday, Internshala, custom ATS)
       const jobPathPatterns = [
         /\/job[s]?\//i,
+        /\/job\/detail\//i,       // Internshala: internshala.com/job/detail/xxx
         /\/position[s]?\//i,
         /\/careers?\//i,
         /\/opening[s]?\//i,
@@ -102,11 +109,14 @@ export class JobApplicationAutomator {
       const isJobLink = (href: string): boolean => {
         try {
           const url = new URL(href, origin);
-          if (url.origin !== new URL(origin).origin && !href.includes('lever.co') && !href.includes('greenhouse')) {
-            return false; // Same domain for custom sites, or allow lever/greenhouse
+          if (url.origin !== new URL(origin).origin && !href.includes('lever.co') && !href.includes('greenhouse') && !href.includes('internshala')) {
+            return false; // Same domain for custom sites, or allow known job boards
           }
           const path = url.pathname + url.search;
-          return jobPathPatterns.some((p) => p.test(path));
+          if (jobPathPatterns.some((p) => p.test(path))) return true;
+          // Internshala fallback: /job/detail/ or path with "detail" and numeric id
+          if (/internshala\.com/i.test(origin) && /\/job\/detail\/.+\d{8,}/i.test(path)) return true;
+          return false;
         } catch {
           return false;
         }
@@ -161,10 +171,9 @@ export class JobApplicationAutomator {
     return filtered;
   }
 
-  /** In local (visible) mode: pause so user can log in to the site. Skipped in serverless. */
+  /** In local (visible) mode: pause so user can log in to the site. Skipped on Render. */
   async waitForManualLogin(): Promise<void> {
-    const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.RENDER;
-    if (isServerless) return;
+    if (process.env.RENDER) return;
 
     const waitSeconds = 30;
     console.log(`\n⏳ If this site requires login (e.g. Internshala), log in now in the browser window. Continuing in ${waitSeconds}s...\n`);
