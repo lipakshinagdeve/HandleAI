@@ -47,7 +47,8 @@ export class JobApplicationAutomator {
       }
     } catch (error) {
       console.error('Failed to launch browser:', error);
-      throw new Error('Could not launch browser for automation. Please ensure Playwright is properly installed.');
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`Could not launch browser for automation: ${detail}`);
     }
     
     const context = await this.browser.newContext({
