@@ -4,13 +4,14 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-/** Groq on-demand tier has 6000 TPM limit. ~4 chars ≈ 1 token. Truncate to stay under limit. */
-const MAX_JOB_DESC_CHARS = 4000;
-const MAX_BACKGROUND_CHARS = 1500;
+/** Groq on-demand tier: 6000 tokens total (input + output). ~4 chars ≈ 1 token. Stay well under. */
+const MAX_JOB_DESC_CHARS = 1800;   // ~450 tokens
+const MAX_BACKGROUND_CHARS = 400;  // ~100 tokens
+const MAX_FORM_FIELDS_CHARS = 800; // ~200 tokens
 
 function truncateForGroq(text: string, maxChars: number): string {
   if (!text || text.length <= maxChars) return text;
-  return text.slice(0, maxChars) + '\n\n[... truncated for API limit ...]';
+  return text.slice(0, maxChars) + '\n[...truncated]';
 }
 
 export interface JobFormField {
@@ -56,7 +57,7 @@ Phone: ${userBackground.phoneNumber}
 Background: ${truncateForGroq(userBackground.backgroundInfo, MAX_BACKGROUND_CHARS)}
 
 FORM FIELDS TO FILL:
-${jobData.formFields.map(field => `- ${field.name} (${field.type}): ${field.label}${field.required ? ' *REQUIRED*' : ''}`).join('\n')}
+${truncateForGroq(jobData.formFields.map(field => `- ${field.name} (${field.type}): ${field.label}${field.required ? ' *REQUIRED*' : ''}`).join('\n'), MAX_FORM_FIELDS_CHARS)}
 
 INSTRUCTIONS:
 1. Generate personalized, professional responses for each form field
@@ -79,7 +80,7 @@ Return ONLY a JSON object with field names as keys and responses as values:
       ],
       model: 'llama-3.1-8b-instant',
       temperature: 0.7,
-      max_tokens: 2000,
+      max_tokens: 1500,
     });
 
     const responseText = completion.choices[0]?.message?.content;
@@ -163,7 +164,7 @@ Return ONLY a JSON object with:
       ],
       model: 'llama-3.1-8b-instant',
       temperature: 0.3,
-      max_tokens: 1000,
+      max_tokens: 800,
     });
 
     const responseText = completion.choices[0]?.message?.content;

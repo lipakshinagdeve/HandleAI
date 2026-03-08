@@ -252,7 +252,7 @@ export class JobApplicationAutomator {
         }
       }
 
-      // Get job description (look for longer text content)
+      // Get job description (look for longer text content). Cap at 2500 chars for Groq API limits.
       const descriptionElements = document.querySelectorAll('p, div, section');
       let longestText = '';
       descriptionElements.forEach((el) => {
@@ -261,7 +261,7 @@ export class JobApplicationAutomator {
           longestText = text;
         }
       });
-      jobDescription = longestText;
+      jobDescription = longestText.length > 2500 ? longestText.slice(0, 2500) + ' [...]' : longestText;
 
       return { jobTitle, companyName, jobDescription };
     });
