@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generatePersonalizedResponses, UserBackground } from '@/lib/groqService';
+import { generatePersonalizedResponses } from '@/lib/groqService';
 
 // This endpoint analyzes a job URL and generates responses without browser automation
 export async function POST(request: NextRequest) {

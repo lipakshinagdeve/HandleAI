@@ -136,7 +136,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           };
 
           await automator.fillForm(completeResponses);
-          const submitClicked = await automator.tryClickSubmit();
+          await automator.tryClickSubmit();
 
           results.push({
             jobUrl: link,
@@ -200,8 +200,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     await automator.fillForm(completeResponses);
     try {
-      const submitClicked = await automator.tryClickSubmit();
-      if (submitClicked) console.log('✅ Submit button clicked');
+      const clicked = await automator.tryClickSubmit();
+      if (clicked) console.log('✅ Submit button clicked');
     } catch {
       // Ignore
     }
