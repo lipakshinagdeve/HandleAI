@@ -1,10 +1,9 @@
 services:
   - type: web
     name: handlejobs-backend
-    runtime: node
+    runtime: docker
     plan: starter
-    buildCommand: npm install && PLAYWRIGHT_BROWSERS_PATH=$PWD/.pw-browsers npx playwright install --with-deps chromium && ls -la $PWD/.pw-browsers && npm run build
-    startCommand: npm start
+    dockerfilePath: ./Dockerfile
     envVars:
       - key: NODE_ENV
         value: production
