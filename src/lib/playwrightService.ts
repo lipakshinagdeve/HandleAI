@@ -1,5 +1,5 @@
 import { chromium, Browser, Page } from 'playwright';
-import { existsSync } from 'fs';
+import { existsSync, readdirSync } from 'fs';
 import { join } from 'path';
 import { JobFormField } from './groqService';
 
@@ -14,8 +14,7 @@ function findChromiumExecutable(): string | undefined {
   for (const root of searchRoots) {
     if (!existsSync(root)) continue;
     try {
-      const { readdirSync } = require('fs');
-      const entries: string[] = readdirSync(root);
+      const entries: string[] = readdirSync(root) as unknown as string[];
       const chromiumDir = entries.find((e: string) => e.startsWith('chromium'));
       if (chromiumDir) {
         const candidates = [

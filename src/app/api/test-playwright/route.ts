@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { chromium } from 'playwright';
 
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     console.log('✅ Playwright imported successfully');
 
