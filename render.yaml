@@ -3,9 +3,11 @@ services:
     name: handlejobs-backend
     runtime: node
     plan: starter
-    buildCommand: npm install && npx playwright install --with-deps chromium && npm run build
+    buildCommand: npm install && PLAYWRIGHT_BROWSERS_PATH=./playwright-browsers npx playwright install --with-deps chromium && npm run build
     startCommand: npm start
     envVars:
+      - key: PLAYWRIGHT_BROWSERS_PATH
+        value: ./playwright-browsers
       - key: NODE_ENV
         value: production
       - key: RENDER
