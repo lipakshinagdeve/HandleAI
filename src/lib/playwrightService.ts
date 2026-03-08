@@ -8,25 +8,25 @@ export class JobApplicationAutomator {
   async initialize() {
     try {
       const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY;
-      const isRender = process.env.RENDER;
+      const browserlessToken = process.env.BROWSERLESS_API_KEY;
 
       if (isServerless) {
         throw new Error('Playwright does not work on serverless (Vercel, Lambda, Netlify). Deploy to Render or run locally.');
       }
 
-      if (isRender) {
-        this.browser = await chromium.launch({
-          headless: true,
-          args: [
-            '--no-sandbox',
-            '--disable-setuid-sandbox',
-            '--disable-dev-shm-usage',
-            '--disable-web-security',
-            '--disable-gpu',
-            '--single-process',
-          ],
-        });
-        console.log('✅ Browser launched on Render');
+      if (process.env.RENDER) {
+        if (!browserlessToken) {
+          throw new Error(
+            'BROWSERLESS_API_KEY is required on Render. Get a free API key at https://browserless.io — then add it in Render Dashboard → Environment.'
+          );
+        }
+        const wsEndpoint = `wss://chrome.browserless.io/playwright?token=${browserlessToken}`;
+        this.browser = await chromium.connect(wsEndpoint);
+        console.log('✅ Connected to Browserless (remote browser)');
+      } else if (browserlessToken) {
+        const wsEndpoint = `wss://chrome.browserless.io/playwright?token=${browserlessToken}`;
+        this.browser = await chromium.connect(wsEndpoint);
+        console.log('✅ Connected to Browserless');
       } else {
         // Local: visible browser for debugging
         this.browser = await chromium.launch({

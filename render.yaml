@@ -1,10 +1,13 @@
 services:
   - type: web
     name: handlejobs-backend
-    runtime: docker
+    runtime: node
     plan: starter
-    dockerfilePath: ./Dockerfile
+    buildCommand: npm install && npm run build
+    startCommand: npm start
     envVars:
+      - key: BROWSERLESS_API_KEY
+        sync: false
       - key: NODE_ENV
         value: production
       - key: RENDER
