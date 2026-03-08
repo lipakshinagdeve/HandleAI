@@ -4,29 +4,40 @@ import { join } from 'path';
 import { JobFormField } from './groqService';
 
 function findChromiumExecutable(): string | undefined {
+  const cwd = process.cwd();
   const searchRoots = [
+    join(cwd, '.pw-browsers'),
+    join(cwd, 'playwright-browsers'),
     process.env.PLAYWRIGHT_BROWSERS_PATH,
     '/opt/render/.cache/ms-playwright',
+    '/opt/render/project/src/.pw-browsers',
     join(process.env.HOME || '/opt/render', '.cache', 'ms-playwright'),
-    join(process.cwd(), 'playwright-browsers'),
   ].filter(Boolean) as string[];
 
+  console.log(`🔎 Searching for Chromium in: ${searchRoots.join(', ')}`);
+
   for (const root of searchRoots) {
-    if (!existsSync(root)) continue;
+    const exists = existsSync(root);
+    console.log(`  📁 ${root} → ${exists ? 'EXISTS' : 'not found'}`);
+    if (!exists) continue;
     try {
-      const entries: string[] = readdirSync(root) as unknown as string[];
-      const chromiumDir = entries.find((e: string) => e.startsWith('chromium'));
+      const entries = readdirSync(root).map(String);
+      console.log(`  📂 Contents: ${entries.join(', ')}`);
+      const chromiumDir = entries.find((e) => e.startsWith('chromium'));
       if (chromiumDir) {
         const candidates = [
           join(root, chromiumDir, 'chrome-linux', 'headless_shell'),
           join(root, chromiumDir, 'chrome-linux', 'chrome'),
           join(root, chromiumDir, 'chrome'),
         ];
-        const found = candidates.find(existsSync);
-        if (found) return found;
+        for (const c of candidates) {
+          const cExists = existsSync(c);
+          console.log(`  🔍 ${c} → ${cExists ? 'FOUND' : 'not found'}`);
+          if (cExists) return c;
+        }
       }
-    } catch {
-      // continue searching
+    } catch (err) {
+      console.log(`  ⚠️ Error reading ${root}: ${err}`);
     }
   }
   return undefined;
