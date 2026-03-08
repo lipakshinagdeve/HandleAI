@@ -1,5 +1,15 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## Setup
+
+### Supabase Storage (for resume uploads)
+
+Create a storage bucket named `resumes` in your Supabase project:
+
+1. Go to Supabase Dashboard → Storage
+2. Create a new bucket named `resumes`
+3. Set it to **Public** so resume URLs can be accessed for job applications
+
 ## Getting Started
 
 First, run the development server:

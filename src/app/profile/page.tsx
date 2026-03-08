@@ -23,6 +23,9 @@ interface UserData {
     last_name?: string;
     phone_number?: string;
     background_info?: string;
+    skills?: string[];
+    portfolio_links?: string[];
+    resume_url?: string;
   };
 }
 
@@ -54,6 +57,11 @@ export default function Profile() {
         phoneNumber: parsed.user_metadata?.phone_number || '',
         backgroundInfo: parsed.user_metadata?.background_info || '',
       });
+      setSkills(Array.isArray(parsed.user_metadata?.skills) ? parsed.user_metadata.skills : []);
+      const links = parsed.user_metadata?.portfolio_links;
+      setPortfolioLinks(
+        Array.isArray(links) && links.length > 0 ? links.filter((l: string) => l?.trim()) : ['']
+      );
     } else {
       router.push('/login');
     }
@@ -107,16 +115,44 @@ export default function Profile() {
     setMessage('');
 
     try {
+      let resumeUrl: string | undefined = user.user_metadata?.resume_url;
+
+      // Upload resume first if a new file was selected
+      if (resumeFile) {
+        const formDataUpload = new FormData();
+        formDataUpload.append('resume', resumeFile);
+        formDataUpload.append('userId', user.id);
+
+        const uploadRes = await fetch('/api/user/resume', {
+          method: 'POST',
+          body: formDataUpload,
+        });
+        const uploadData = await uploadRes.json();
+
+        if (!uploadData.success) {
+          setMessage(uploadData.message || 'Failed to upload resume');
+          setSaving(false);
+          return;
+        }
+        resumeUrl = uploadData.resumeUrl;
+      }
+
+      const filteredPortfolioLinks = portfolioLinks.filter((l) => l?.trim());
+      const payload = {
+        userId: user.id,
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        phoneNumber: formData.phoneNumber,
+        backgroundInfo: formData.backgroundInfo,
+        skills,
+        portfolioLinks: filteredPortfolioLinks.length > 0 ? filteredPortfolioLinks : [],
+        ...(resumeUrl !== undefined && { resumeUrl }),
+      };
+
       const response = await fetch('/api/user/update', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: user.id,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phoneNumber: formData.phoneNumber,
-          backgroundInfo: formData.backgroundInfo,
-        }),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -130,10 +166,14 @@ export default function Profile() {
             last_name: formData.lastName,
             phone_number: formData.phoneNumber,
             background_info: formData.backgroundInfo,
+            skills,
+            portfolio_links: filteredPortfolioLinks,
+            ...(resumeUrl !== undefined && { resume_url: resumeUrl }),
           },
         };
         localStorage.setItem('user', JSON.stringify(updatedUser));
         setUser(updatedUser);
+        setResumeFile(null); // Clear file input after successful save
         setMessage('Profile saved successfully!');
       } else {
         setMessage(data.message || 'Failed to save profile');
@@ -212,6 +252,23 @@ export default function Profile() {
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+            ) : user?.user_metadata?.resume_url ? (
+              <div className="flex items-center justify-center gap-3">
+                <FileText className="w-5 h-5 text-accent" />
+                <span className="text-sm font-medium text-zinc-900">
+                  Resume saved
+                </span>
+                <a
+                  href={user.user_metadata.resume_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-sm text-accent hover:underline"
+                >
+                  View
+                </a>
+                <p className="text-xs text-zinc-400">Click above to upload a new one</p>
               </div>
             ) : (
               <>
