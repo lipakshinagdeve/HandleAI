@@ -20,12 +20,12 @@ export class JobApplicationAutomator {
             'BROWSERLESS_API_KEY is required on Render. Get a free API key at https://browserless.io — then add it in Render Dashboard → Environment.'
           );
         }
-        const wsEndpoint = `wss://chrome.browserless.io/playwright?token=${browserlessToken}`;
-        this.browser = await chromium.connect(wsEndpoint);
+        const wsEndpoint = `wss://chrome.browserless.io?token=${browserlessToken}`;
+        this.browser = await chromium.connectOverCDP(wsEndpoint);
         console.log('✅ Connected to Browserless (remote browser)');
       } else if (browserlessToken) {
-        const wsEndpoint = `wss://chrome.browserless.io/playwright?token=${browserlessToken}`;
-        this.browser = await chromium.connect(wsEndpoint);
+        const wsEndpoint = `wss://chrome.browserless.io?token=${browserlessToken}`;
+        this.browser = await chromium.connectOverCDP(wsEndpoint);
         console.log('✅ Connected to Browserless');
       } else {
         // Local: visible browser for debugging
