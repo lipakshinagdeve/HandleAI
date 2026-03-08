@@ -3,7 +3,7 @@ import { JobApplicationAutomator } from '@/lib/playwrightService';
 import { generatePersonalizedResponses } from '@/lib/groqService';
 import type { UserBackground } from '@/lib/groqService';
 
-export const maxDuration = 120; // Allow up to 2 minutes for browser automation (Render, Vercel Pro)
+export const maxDuration = 300; // Allow up to 5 minutes for listing pages with multiple jobs
 
 function getDomainFromUrl(url: string): string {
   try {
@@ -93,6 +93,87 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     await automator.navigateToJobApplication(jobUrl);
     await automator.waitForManualLogin(); // Pause locally so user can log in if needed
 
+    // Check if this is a job listing page (multiple jobs) or a single application page
+    const jobLinks = await automator.extractJobLinksFromListingPage(jobUrl);
+    const isListingPage = jobLinks.length >= 2;
+
+    if (isListingPage) {
+      console.log(`📋 Detected job listing page with ${jobLinks.length} jobs. Applying to each...`);
+      const results: { jobUrl: string; success: boolean; jobTitle: string; companyName: string; message?: string }[] = [];
+
+      for (let i = 0; i < jobLinks.length; i++) {
+        const link = jobLinks[i];
+        console.log(`\n📌 Job ${i + 1}/${jobLinks.length}: ${link}`);
+
+        try {
+          await automator.navigateToJobApplication(link);
+          await automator.waitForManualLogin();
+
+          const { formFields, jobTitle: analyzedTitle, companyName: analyzedCompany, jobDescription } = await automator.analyzeForm();
+          const linkCompany = analyzedCompany || getDomainFromUrl(link);
+          const linkTitle = analyzedTitle || getTitleFromUrl(link) || 'Job Application';
+
+          if (formFields.length === 0) {
+            console.log(`⏭️ No form fields found, skipping`);
+            results.push({ jobUrl: link, success: false, jobTitle: linkTitle, companyName: linkCompany, message: 'No application form found' });
+            continue;
+          }
+
+          const jobData = {
+            companyName: linkCompany,
+            jobTitle: linkTitle,
+            jobDescription: jobDescription || 'No description provided',
+            formFields
+          };
+
+          const aiResponses = await generatePersonalizedResponses(jobData, userBg);
+          const completeResponses: Record<string, string> = {
+            firstName: userBg.firstName,
+            lastName: userBg.lastName,
+            email: userBg.email,
+            phoneNumber: userBg.phoneNumber,
+            ...aiResponses
+          };
+
+          await automator.fillForm(completeResponses);
+          const submitClicked = await automator.tryClickSubmit();
+
+          results.push({
+            jobUrl: link,
+            success: true,
+            jobTitle: linkTitle,
+            companyName: linkCompany
+          });
+          console.log(`✅ Applied to: ${linkTitle} at ${linkCompany}`);
+        } catch (jobErr) {
+          const errMsg = jobErr instanceof Error ? jobErr.message : String(jobErr);
+          console.error(`❌ Failed for ${link}:`, errMsg);
+          results.push({
+            jobUrl: link,
+            success: false,
+            jobTitle: getTitleFromUrl(link) || 'Job Application',
+            companyName: getDomainFromUrl(link),
+            message: errMsg
+          });
+        }
+      }
+
+      await safeForceClose();
+
+      const appliedCount = results.filter((r) => r.success).length;
+      return NextResponse.json({
+        success: appliedCount > 0,
+        message: `Applied to ${appliedCount} of ${results.length} jobs from listing page.`,
+        data: {
+          isListingPage: true,
+          results,
+          totalJobs: results.length,
+          appliedCount
+        }
+      });
+    }
+
+    // Single application page (original flow)
     const { formFields, jobTitle: analyzedTitle, companyName: analyzedCompany, jobDescription } = await automator.analyzeForm();
     companyName = analyzedCompany || getDomainFromUrl(jobUrl);
     jobTitle = analyzedTitle || getTitleFromUrl(jobUrl) || 'Job Application';
@@ -101,7 +182,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     console.log(`💼 Position: ${jobTitle || 'Unknown'}`);
     console.log(`📋 Found ${formFields.length} form fields`);
 
-    // Generate AI responses
     const jobData = {
       companyName: companyName || getDomainFromUrl(jobUrl),
       jobTitle: jobTitle || getTitleFromUrl(jobUrl) || 'Job Application',
@@ -110,8 +190,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     const aiResponses = await generatePersonalizedResponses(jobData, userBg);
-
-    // Merge user info with AI responses (ensure phoneNumber for field mapping)
     const completeResponses: Record<string, string> = {
       firstName: userBg.firstName,
       lastName: userBg.lastName,
@@ -121,15 +199,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     };
 
     await automator.fillForm(completeResponses);
-
-    // Try to click submit (best effort - not all forms have a simple submit)
     try {
       const submitClicked = await automator.tryClickSubmit();
-      if (submitClicked) {
-        console.log('✅ Submit button clicked');
-      }
+      if (submitClicked) console.log('✅ Submit button clicked');
     } catch {
-      // Ignore - many forms are multi-step or have custom submit logic
+      // Ignore
     }
 
     await safeForceClose();

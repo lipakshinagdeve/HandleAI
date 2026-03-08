@@ -67,6 +67,100 @@ export class JobApplicationAutomator {
     await this.page.waitForTimeout(3000);
   }
 
+  /**
+   * Detect if current page is a job listing (multiple jobs) and extract links to individual job pages.
+   * Returns empty array if this looks like a single application page.
+   */
+  async extractJobLinksFromListingPage(currentPageUrl: string): Promise<string[]> {
+    if (!this.page) return [];
+
+    const baseUrl = new URL(currentPageUrl);
+    const MAX_JOBS = 30; // Cap to avoid timeouts
+
+    const jobLinks = await this.page.evaluate(
+      ({ origin, maxJobs }: { origin: string; maxJobs: number }) => {
+      const links: string[] = [];
+      const seen = new Set<string>();
+
+      // Patterns that indicate job/position links (Greenhouse, Lever, Workday, custom ATS)
+      const jobPathPatterns = [
+        /\/job[s]?\//i,
+        /\/position[s]?\//i,
+        /\/careers?\//i,
+        /\/opening[s]?\//i,
+        /\/role[s]?\//i,
+        /\/apply\//i,
+        /\/opportunit(y|ies)\//i,
+        /lever\.co\/[^/]+\/[^/]+/i,  // lever.co/company/job-id
+        /greenhouse\.io\/[^/]+\/jobs/i,
+        /jobs\.lever\.co/i,
+        /boards\.greenhouse\.io/i,
+        /\/job\/[a-zA-Z0-9_-]+/i,
+        /\/jobs\/[a-zA-Z0-9_-]+/i,
+      ];
+
+      const isJobLink = (href: string): boolean => {
+        try {
+          const url = new URL(href, origin);
+          if (url.origin !== new URL(origin).origin && !href.includes('lever.co') && !href.includes('greenhouse')) {
+            return false; // Same domain for custom sites, or allow lever/greenhouse
+          }
+          const path = url.pathname + url.search;
+          return jobPathPatterns.some((p) => p.test(path));
+        } catch {
+          return false;
+        }
+      };
+
+      const isNoise = (href: string, text: string): boolean => {
+        const lower = (href + ' ' + text).toLowerCase();
+        return (
+          /login|signin|signup|logout|dashboard|settings|profile|privacy|terms|cookie/i.test(lower) ||
+          /#|javascript:|mailto:|tel:/i.test(href) ||
+          href.endsWith('.pdf') ||
+          href.endsWith('.jpg') ||
+          href.endsWith('.png')
+        );
+      };
+
+      const anchors = document.querySelectorAll<HTMLAnchorElement>('a[href]');
+      for (const a of anchors) {
+        const href = a.getAttribute('href');
+        if (!href || isNoise(href, a.textContent || '')) continue;
+
+        try {
+          const absolute = new URL(href, origin).href;
+          if (seen.has(absolute)) continue;
+          if (!isJobLink(absolute)) continue;
+
+          seen.add(absolute);
+          links.push(absolute);
+          if (links.length >= maxJobs) break;
+        } catch {
+          // invalid URL
+        }
+      }
+
+      return links;
+    },
+      { origin: baseUrl.origin, maxJobs: MAX_JOBS }
+    );
+
+    // Normalize and dedupe; exclude current page
+    const currentNorm = baseUrl.pathname.replace(/\/$/, '') || '/';
+    const filtered = jobLinks.filter((link) => {
+      try {
+        const u = new URL(link);
+        const pathNorm = u.pathname.replace(/\/$/, '') || '/';
+        return u.origin === baseUrl.origin ? pathNorm !== currentNorm : true;
+      } catch {
+        return true;
+      }
+    });
+
+    return filtered;
+  }
+
   /** In local (visible) mode: pause so user can log in to the site. Skipped in serverless. */
   async waitForManualLogin(): Promise<void> {
     const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.RENDER;

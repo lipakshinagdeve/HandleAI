@@ -4,6 +4,15 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
+/** Groq on-demand tier has 6000 TPM limit. ~4 chars ≈ 1 token. Truncate to stay under limit. */
+const MAX_JOB_DESC_CHARS = 4000;
+const MAX_BACKGROUND_CHARS = 1500;
+
+function truncateForGroq(text: string, maxChars: number): string {
+  if (!text || text.length <= maxChars) return text;
+  return text.slice(0, maxChars) + '\n\n[... truncated for API limit ...]';
+}
+
 export interface JobFormField {
   name: string;
   type: 'text' | 'email' | 'textarea' | 'select' | 'radio' | 'checkbox';
@@ -38,13 +47,13 @@ You are an expert job application assistant. Generate personalized, professional
 
 COMPANY: ${jobData.companyName}
 JOB TITLE: ${jobData.jobTitle}
-JOB DESCRIPTION: ${jobData.jobDescription}
+JOB DESCRIPTION: ${truncateForGroq(jobData.jobDescription, MAX_JOB_DESC_CHARS)}
 
 CANDIDATE BACKGROUND:
 Name: ${userBackground.firstName} ${userBackground.lastName}
 Email: ${userBackground.email}
 Phone: ${userBackground.phoneNumber}
-Background: ${userBackground.backgroundInfo}
+Background: ${truncateForGroq(userBackground.backgroundInfo, MAX_BACKGROUND_CHARS)}
 
 FORM FIELDS TO FILL:
 ${jobData.formFields.map(field => `- ${field.name} (${field.type}): ${field.label}${field.required ? ' *REQUIRED*' : ''}`).join('\n')}
@@ -134,7 +143,7 @@ export async function analyzeJobDescription(jobDescription: string): Promise<{
 Analyze this job description and extract key information:
 
 JOB DESCRIPTION:
-${jobDescription}
+${truncateForGroq(jobDescription, MAX_JOB_DESC_CHARS)}
 
 Return ONLY a JSON object with:
 {

@@ -214,7 +214,16 @@ export default function Dashboard() {
           body: JSON.stringify({ jobUrl: trimmedUrl, userBackground }),
         });
 
-        let data: { success?: boolean; message?: string; data?: { jobTitle?: string; companyName?: string } };
+        let data: {
+          success?: boolean;
+          message?: string;
+          data?: {
+            jobTitle?: string;
+            companyName?: string;
+            isListingPage?: boolean;
+            results?: Array<{ jobUrl: string; success: boolean; jobTitle: string; companyName: string }>;
+          };
+        };
         try {
           data = await response.json();
         } catch {
@@ -222,29 +231,55 @@ export default function Dashboard() {
           data = { success: false, data: { jobTitle: metadata.title, companyName: metadata.company } };
         }
 
-        const resultStatus = data.success ? 'applied' : 'failed';
-        // Prefer apply API data (from page DOM), fall back to metadata we extracted
-        const title = data.data?.jobTitle || metadata.title || 'Job Application';
-        const company = data.data?.companyName || metadata.company || domain;
+        // Handle job listing page (multiple jobs)
+        if (data.data?.isListingPage && Array.isArray(data.data.results)) {
+          const results = data.data.results;
+          setApplications((prev) =>
+            prev
+              .filter((app) => app.url !== trimmedUrl)
+              .concat(
+                results.map((r) => ({
+                  url: r.jobUrl,
+                  status: (r.success ? 'applied' : 'failed') as 'applied' | 'failed',
+                  title: r.jobTitle,
+                  company: r.companyName,
+                }))
+              )
+          );
+          setMessage(data.message || `Processed ${results.length} jobs`);
+          for (const r of results) {
+            await saveApplication({
+              url: r.jobUrl,
+              title: r.jobTitle,
+              company: r.companyName,
+              status: r.success ? 'applied' : 'failed',
+            });
+          }
+        } else {
+          // Single job page
+          const resultStatus = data.success ? 'applied' : 'failed';
+          const title = data.data?.jobTitle || metadata.title || 'Job Application';
+          const company = data.data?.companyName || metadata.company || domain;
 
-        setApplications((prev) =>
-          prev.map((app) =>
-            app.url === trimmedUrl
-              ? { ...app, status: resultStatus as 'applied' | 'failed', title, company }
-              : app
-          )
-        );
+          setApplications((prev) =>
+            prev.map((app) =>
+              app.url === trimmedUrl
+                ? { ...app, status: resultStatus as 'applied' | 'failed', title, company }
+                : app
+            )
+          );
 
-        if (!data.success && data.message) {
-          setMessage(data.message);
+          if (!data.success && data.message) {
+            setMessage(data.message);
+          }
+
+          await saveApplication({
+            url: trimmedUrl,
+            title,
+            company,
+            status: resultStatus,
+          });
         }
-
-        await saveApplication({
-          url: trimmedUrl,
-          title,
-          company,
-          status: resultStatus,
-        });
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Network or unexpected error';
         setMessage(errMsg);
