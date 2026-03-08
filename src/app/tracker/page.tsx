@@ -195,7 +195,8 @@ export default function Tracker() {
                         href={app.job_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
+                        title="Open job page"
+                        className="inline-flex items-center justify-center p-2 text-zinc-500 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors"
                       >
                         <ExternalLink className="w-4 h-4" />
                       </a>

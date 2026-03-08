@@ -16,6 +16,7 @@ import {
   Plus,
   ArrowRight,
   FileText,
+  ExternalLink,
 } from 'lucide-react';
 
 interface User {
@@ -588,6 +589,17 @@ export default function Dashboard() {
                   >
                     {app.status}
                   </span>
+                  {app.url && (
+                    <a
+                      href={app.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title="Open job page"
+                      className="inline-flex items-center justify-center p-2 text-zinc-500 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors flex-shrink-0"
+                    >
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  )}
                 </div>
               ))}
             </div>

@@ -198,9 +198,10 @@ export function ApplicationReport({
                       href={entry.jobUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-zinc-400 hover:text-zinc-600 transition-colors"
+                      title="Open job page"
+                      className="inline-flex items-center justify-center p-2 text-zinc-500 hover:text-accent hover:bg-accent/5 rounded-lg transition-colors"
                     >
-                      <ExternalLink className="w-4 h-4 inline" />
+                      <ExternalLink className="w-4 h-4" />
                     </a>
                   </td>
                 )}
